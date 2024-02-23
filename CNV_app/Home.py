@@ -36,7 +36,7 @@ def generate_sample(cohort_samples):
     # return no_plot
 
 def plot_sample():
-    sample_df_interval = pd.read_csv(f"CNV_app/data/{st.session_state['model_choice']}/{st.session_state['cohort_choice']}/{st.session_state['gene_choice']}/pred_cnvs/{st.session_state['sample_name']}_full_interval.csv")
+    sample_df_interval = pd.read_csv(f"CNV_app/data/{st.session_state['model_choice']}/{st.session_state['cohort_choice']}/{st.session_state['gene_choice']}/app/pred_cnvs/{st.session_state['sample_name']}_full_interval.csv")
     sample_df_interval['ALT_pred'].fillna('<None>', inplace = True)
     pred_cnv = sample_df_interval[sample_df_interval['CNV_call'] == 1]
 
@@ -98,7 +98,7 @@ st.session_state['gene_choice'] = gene_name
 # second page: upload text file and check plots
 
 st.title('Evaluation of CNV Predictions')
-model_results = pd.read_csv(f'CNV_app/data/{models_dict[model_name]}/{cohort_name}/{gene_name}/GP2_{cohort_name}_{gene_name}_app_ready.csv')
+model_results = pd.read_csv(f'CNV_app/data/{models_dict[model_name]}/{cohort_name}/{gene_name}/app/GP2_{cohort_name}_{gene_name}_app_ready.csv')
 
 with st.expander("Filter Displayed Samples"):
     confidence = st.select_slider('Display samples with prediction probability of at least:', options=[0.8, 0.9, 1], value = 1)
