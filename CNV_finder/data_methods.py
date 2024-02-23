@@ -268,7 +268,9 @@ def generate_pred_cnvs(metrics, chr, start, stop, out_path, buffer = 250000, min
     sample_df_interval['CNV_call'] = np.where(sample_df_interval['ALT_pred'] == '', 0, 
                                     np.where(sample_df_interval['ALT_pred'] != '', 1, ''))
 
-    pred_path = f'{out_dir}/pred_cnvs/{chr}_{start-buffer}_{stop+buffer}'
+    # more simplistic path relies on organized out_path selection
+    # pred_path = f'{out_dir}/pred_cnvs/{chr}_{start-buffer}_{stop+buffer}'
+    pred_path = f'{out_dir}/pred_cnvs'
     os.makedirs(pred_path, exist_ok=True)
     sample_df_interval.to_csv(f'{pred_path}/{sample}_full_interval.csv', index = False)
         

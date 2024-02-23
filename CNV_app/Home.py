@@ -36,7 +36,7 @@ def generate_sample(cohort_samples):
     # return no_plot
 
 def plot_sample():
-    sample_df_interval = pd.read_csv(f"data/{st.session_state['cohort_choice']}/{st.session_state['model_choice']}/{st.session_state['gene_choice']}/pred_cnvs/{st.session_state['sample_name']}_{st.session_state['gene_choice']}_full_interval.csv")
+    sample_df_interval = pd.read_csv(f"CNV_app/data/{st.session_state['model_choice']}/{st.session_state['cohort_choice']}/{st.session_state['gene_choice']}/pred_cnvs/{st.session_state['sample_name']}_full_interval.csv")
     sample_df_interval['ALT_pred'].fillna('<None>', inplace = True)
     pred_cnv = sample_df_interval[sample_df_interval['CNV_call'] == 1]
 
@@ -59,24 +59,21 @@ def plot_sample():
     st.plotly_chart(fig_baf_full)
 
 ### Create sidebar options
-# add session state methods later for these selections to remember when exploring other pages (if more pages added)
-# split GP2 by cohort but also provide full release option
-st.sidebar.markdown('### Choose a GP2 Cohort')
-cohorts = ['CATPD', 'CORIELL', 'GP2']
-cohort_name = st.sidebar.selectbox(label = 'Cohort Selection', label_visibility = 'collapsed', options=cohorts)
-
 # will expand on model selection - need to distinguish test results based on model version
 st.sidebar.markdown('### Choose a Model')
 models = ['Preliminary Deletion Model']
 model_name = st.sidebar.selectbox(label = 'Model Selection', label_visibility = 'collapsed', options=models)
+models_dict = {'Preliminary Deletion Model': 'prelim_del_model'}
+
+# split GP2 by cohort but also provide full release option
+st.sidebar.markdown('### Choose a GP2 Cohort')
+cohorts = next(os.walk(f'CNV_app/data/{models_dict[model_name]}'))[1]
+cohort_name = st.sidebar.selectbox(label = 'Cohort Selection', label_visibility = 'collapsed', options=cohorts)
 
 # will expand on this selection to all NDDs
 st.sidebar.markdown('### Choose an NDD-Related Gene')
-genes = ['PRKN', 'SNCA', '22q']
+genes = ['PARK2']
 gene_name = st.sidebar.selectbox(label = 'NDD-Related Gene Selection', label_visibility = 'collapsed', options=genes)
-
-models_dict = {'Preliminary Deletion Model': 'prelim_del_model'}
-
 
 # can change into a function
 option_change = False
@@ -101,7 +98,7 @@ st.session_state['gene_choice'] = gene_name
 # second page: upload text file and check plots
 
 st.title('Evaluation of CNV Predictions')
-model_results = pd.read_csv(f'data/{cohort_name}/{models_dict[model_name]}/{gene_name}/{gene_name}_{cohort_name}_app_ready.csv')
+model_results = pd.read_csv(f'CNV_app/data/{models_dict[model_name]}/{cohort_name}/{gene_name}/GP2_{cohort_name}_{gene_name}_app_ready.csv')
 
 with st.expander("Filter Displayed Samples"):
     confidence = st.select_slider('Display samples with prediction probability of at least:', options=[0.8, 0.9, 1], value = 1)
@@ -110,18 +107,18 @@ with st.expander("Filter Displayed Samples"):
     iqr_range = np.linspace(min(abs(model_results['abs_iqr_lrr'])), max(abs(model_results['abs_iqr_lrr'])), num=50)
     iqr_threshold = st.select_slider('Maximum Absolute Value LRR range threshold:', options=iqr_range, value = max(iqr_range))
 
-    # make options list a range, not discrete options
-    if st.session_state['gene_choice'] == '22q':
-        # use standard deviation for ranges instead of hard coded ranges
-        lower_range = np.linspace(min(model_results['cnv_range_count']), max(model_results['cnv_range_count']-2500), num=50)
-        upper_range = np.linspace(max(model_results['cnv_range_count']-2500), max(model_results['cnv_range_count']), num=50)
-        selected_value_lower = min(lower_range)
-        selected_value_higher = max(upper_range)
-    else:
-        lower_range = range(40, 110, 10)
-        upper_range = range(100, 500, 50)
-        selected_value_lower = 80
-        selected_value_higher = 300
+    # potentially use standard deviations here
+    min_cnv_count = min(model_results['cnv_range_count'])
+    max_cnv_count = max(model_results['cnv_range_count'])
+    lower_range = np.linspace(min_cnv_count, max_cnv_count - (0.5 * max_cnv_count), num=50)
+    upper_range = np.linspace(max_cnv_count- (0.5 * max_cnv_count), max_cnv_count, num=50)
+    selected_value_lower = min(lower_range)
+    selected_value_higher = max(upper_range)
+
+    # lower_range = range(40, 110, 10)
+    # upper_range = range(100, 500, 50)
+    # selected_value_lower = 80
+    # selected_value_higher = 300
 
     lower_range_threshold = st.select_slider('Minimum threshold for CNV count:', options=lower_range, value = selected_value_lower)
     upper_range_threshold = st.select_slider('Maximum threshold for CNV count :', options=upper_range, value = selected_value_higher)
