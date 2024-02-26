@@ -68,7 +68,13 @@ def std_within_interval(row, col_name, df):
 def dosage_within_gene(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (df['position'] <= row['STOP'])
     calls = sum(df.loc[interval_mask, col_name])
-    return calls/len(df)
+
+    # catch potential division by zero error
+    if len(df) > 0:
+        dosage = calls/len(df)
+    else:
+        dosage = 0
+    return dosage
 
 def create_train_set():
     # create file if doesn't exist, or append to existing file so you can add pos/neg cases
@@ -114,7 +120,7 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
     # later fix to account for missing snp metrics that result in < num_samples
     test_set_final = test_set[~test_set.IID.isin(remove)]
     test_set_final.to_csv(f'{out_path}_testing_IDs.csv', index = False)
-    print(f'{len(test_set_final)} of requested {num_samples} have necessary SNP metrics')
+    print(f'{len(test_set_final)} of requested {num_samples} samples have necessary SNP metrics')
 
 def make_window_df(chr, start, stop, split_interval, window_count, buffer):
     window_size = round(((stop+buffer) - (start-buffer))/split_interval)
