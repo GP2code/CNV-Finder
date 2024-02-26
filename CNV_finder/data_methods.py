@@ -38,18 +38,21 @@ def mean_within_interval(row, col_name, df):
     return df.loc[interval_mask, col_name].mean()
 
 def create_overlapping_windows(data, window_size, num_intervals):
-    # will find necessary overlap to reach the end of the data w/ specified # windows
+    # Finds necessary overlap to reach the end of the data w/ specified # windows
     total_data_points = len(data)
-    overlap = int((total_data_points - window_size) / (num_intervals - 1))
+    # Prevents overlap of 0
+    overlap = max(1, int((total_data_points - window_size) / max(1, num_intervals - 1)))
     print(f'{num_intervals} total windows overlapping by: {overlap} base pairs')
-    
+
     start, stop = [], []
     start_index = 0
 
     while start_index + window_size <= total_data_points:
         end_index = start_index + window_size
         start.append(data[start_index])
-        stop.append(data[end_index])
+
+        # Prevent out of bounds error
+        stop.append(data[min(end_index, total_data_points - 1)])
         start_index += overlap
 
     return start, stop
@@ -70,6 +73,7 @@ def dosage_within_gene(row, col_name, df):
 def create_train_set():
     # create file if doesn't exist, or append to existing file so you can add pos/neg cases
     # can potentially supply path to folder with all hand-checked samples
+    # will accept output from app
     pass
 
 def create_test_set(master_key, num_samples, training_file, snp_metrics_path, out_path, study_name = 'all'):

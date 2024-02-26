@@ -72,7 +72,7 @@ cohort_name = st.sidebar.selectbox(label = 'Cohort Selection', label_visibility 
 
 # will expand on this selection to all NDDs
 st.sidebar.markdown('### Choose an NDD-Related Gene')
-genes = ['PARK2']
+genes = ['PARK2', 'APOE', 'ABI3', 'ABCA7', '22q_small', '22q']
 gene_name = st.sidebar.selectbox(label = 'NDD-Related Gene Selection', label_visibility = 'collapsed', options=genes)
 
 # can change into a function
