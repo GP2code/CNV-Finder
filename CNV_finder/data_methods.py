@@ -98,7 +98,8 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
     train_df = pd.read_csv(training_file)
     
     open_ids = full_samples_list[~full_samples_list.IID.isin(train_df.IID)]
-    test_filenames = random.sample(set(open_ids.IID), k=num_samples)
+    k = min(len(open_ids), num_samples)
+    test_filenames = random.sample(set(open_ids.IID), k=k)
 
     test_set = master[['IID', 'label']][master['IID'].isin(test_filenames)]
     test_set.reset_index(drop = True, inplace = True)
