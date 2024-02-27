@@ -143,6 +143,12 @@ if 'maybe_choices' not in st.session_state:
     st.session_state['maybe_choices'] = []
 if 'no_choices' not in st.session_state:
     st.session_state['no_choices'] = []
+if 'yes_gene' not in st.session_state:
+    st.session_state['yes_gene'] = []
+if 'maybe_gene' not in st.session_state:
+    st.session_state['maybe_gene'] = []
+if 'no_gene' not in st.session_state:
+    st.session_state['no_gene'] = []
 if 'sample_name' not in st.session_state:
     generate_sample(cohort_samples)
 if option_change:
@@ -167,10 +173,13 @@ else:
 
 if yes:
     st.session_state['yes_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
+    st.session_state['yes_gene'].append(st.session_state["gene_choice"])
 elif maybe:
     st.session_state['maybe_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
+    st.session_state['maybe_gene'].append(st.session_state["gene_choice"])
 elif no_btn:
     st.session_state['no_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
+    st.session_state['no_gene'].append(st.session_state["gene_choice"])
 
 side_btn1, side_btn2, side_btn3 = st.sidebar.columns(3)
 
@@ -194,13 +203,9 @@ with st.sidebar.expander("View Reported Samples"):
 
 save = side_btn2.button('Save Report')
 if save:
-    yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices']})
-    maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices']})
-    no_report = pd.DataFrame({'No Samples': st.session_state['no_choices']})
-
-    # st.write(yes_report)
-    # st.write(maybe_report)
-    # st.write(no_report)
+    yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene']})
+    maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene']})
+    no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene']})
 
     yes_report.to_csv('CNV_app/data/yes_samples.csv', index = False)
     maybe_report.to_csv('CNV_app/data/maybe_samples.csv', index = False)
