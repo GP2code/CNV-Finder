@@ -12,7 +12,7 @@ import datetime
 from io import StringIO
 
 
-def plot_clusters(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', title='snp plot', opacity = 1, cnvs = None, xmin= None, xmax = None):
+def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', title='snp plot', opacity = 1, cnvs = None, xmin= None, xmax = None):
     d3 = px.colors.qualitative.D3
 
     cmap = {

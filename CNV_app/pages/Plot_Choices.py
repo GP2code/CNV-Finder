@@ -14,6 +14,6 @@ from PIL import Image
 from st_aggrid import GridOptionsBuilder, AgGrid, GridUpdateMode, DataReturnMode
 from io import StringIO, BytesIO
 
-from hold_method import plot_clusters
+from hold_method import plot_variants
 
 st.title('Plot Choices')

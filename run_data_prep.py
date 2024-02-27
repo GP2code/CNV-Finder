@@ -5,7 +5,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Arguments for Running CNV-Finder ML Data Prep.')    
 parser.add_argument('--interval_name', type=str, default=None, help='Name for NDD-related Gene region.')
 parser.add_argument('--interval_file', type=str, default='ref_files/glist_hg38_intervals.csv', help='Gene or other feature intervals to analyze. Header is [NAME,CHR,START,STOP], one line per interval. Autosomes only.')
-parser.add_argument('--chr', type=int, default=None, help='Chromsome for region of interest.')
+parser.add_argument('--chr', type=str, default=None, help='Chromsome for region of interest.')
 parser.add_argument('--start', type=int, default=None, help='Starting position in base pairs (hg38).')
 parser.add_argument('--stop', type=int, default=None, help='Stopping position in base pairs (hg38).')
 parser.add_argument('--buffer', type=int, default=250000, help='Kilobase window around each interval, in bases.')

@@ -14,7 +14,7 @@ from PIL import Image
 from st_aggrid import GridOptionsBuilder, AgGrid, GridUpdateMode, DataReturnMode
 from io import StringIO, BytesIO
 
-from hold_method import plot_clusters
+from hold_method import plot_variants
 
 
 st.set_page_config(
@@ -44,18 +44,18 @@ def plot_sample():
     # st.dataframe(pred_cnv)
 
     # predictions only
-    fig_lrr = plot_clusters(pred_cnv[pred_cnv['ALT_pred']!='<INS>'], x_col='position', y_col='LogRRatio', gtype_col = 'ALT_pred', title=f'{st.session_state["gene_choice"]} Interval Predictions Only')
+    fig_lrr = plot_variants(pred_cnv[pred_cnv['ALT_pred']!='<INS>'], x_col='position', y_col='LogRRatio', gtype_col = 'ALT_pred', title=f'{st.session_state["gene_choice"]} Interval Predictions Only')
     xmin, xmax = pred_cnv['position'].min(), pred_cnv['position'].max()
     st.plotly_chart(fig_lrr)
 
-    fig_baf = plot_clusters(pred_cnv[pred_cnv['ALT_pred']=='<INS>'], x_col='position', y_col='BAlleleFreq', gtype_col = 'ALT_pred', title=f'{st.session_state["gene_choice"]} Interval Predictions Only', xmin=xmin, xmax=xmax)
+    fig_baf = plot_variants(pred_cnv[pred_cnv['ALT_pred']=='<INS>'], x_col='position', y_col='BAlleleFreq', gtype_col = 'ALT_pred', title=f'{st.session_state["gene_choice"]} Interval Predictions Only', xmin=xmin, xmax=xmax)
     st.plotly_chart(fig_baf)
 
     # just CNV predicted variants among all variants
-    fig_lrr_full = plot_clusters(sample_df_interval[sample_df_interval['ALT_pred']!='<INS>'], x_col='position', gtype_col = 'ALT_pred', y_col='LogRRatio', title=f'{st.session_state["gene_choice"]} Interval')
+    fig_lrr_full = plot_variants(sample_df_interval[sample_df_interval['ALT_pred']!='<INS>'], x_col='position', gtype_col = 'ALT_pred', y_col='LogRRatio', title=f'{st.session_state["gene_choice"]} Interval')
     st.plotly_chart(fig_lrr_full)
     
-    fig_baf_full = plot_clusters(sample_df_interval[(sample_df_interval['ALT_pred']!='<DEL>') & (sample_df_interval['ALT_pred']!='<DUP>')], x_col='position', gtype_col = 'ALT_pred', y_col='BAlleleFreq', title=f'{st.session_state["gene_choice"]} Interval')
+    fig_baf_full = plot_variants(sample_df_interval[(sample_df_interval['ALT_pred']!='<DEL>') & (sample_df_interval['ALT_pred']!='<DUP>')], x_col='position', gtype_col = 'ALT_pred', y_col='BAlleleFreq', title=f'{st.session_state["gene_choice"]} Interval')
     st.plotly_chart(fig_baf_full)
 
 ### Create sidebar options
@@ -72,7 +72,7 @@ cohort_name = st.sidebar.selectbox(label = 'Cohort Selection', label_visibility 
 
 # will expand on this selection to all NDDs
 st.sidebar.markdown('### Choose an NDD-Related Gene')
-genes = ['PARK2', 'APOE', 'ABI3', 'ABCA7', '22q_small', '22q']
+genes = ['PARK2', 'LINGO2', 'SNCA', 'LRRK2', 'GBA', 'MAPT', 'APOE', 'ABI3', 'ABCA7', '22q_small', '22q']
 gene_name = st.sidebar.selectbox(label = 'NDD-Related Gene Selection', label_visibility = 'collapsed', options=genes)
 
 # can change into a function
@@ -144,38 +144,35 @@ if 'maybe_choices' not in st.session_state:
 if 'no_choices' not in st.session_state:
     st.session_state['no_choices'] = []
 if 'sample_name' not in st.session_state:
-    no_plot = generate_sample(cohort_samples)
+    generate_sample(cohort_samples)
 if option_change:
-    no_plot = generate_sample(cohort_samples)
+    generate_sample(cohort_samples)
 
 col1, col2 = st.columns([3,0.7])
 btn0, btn1, btn2, btn3, btn4 = st.columns([1,0.5,0.5,0.5,0.5])
 
-yes = btn1.button('Yes')
-maybe = btn2.button('Maybe')
-no_btn = btn3.button('No')
-
-if yes:
-    st.session_state['yes_choices'].append(st.session_state['sample_name'])
-    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
-    no_plot = generate_sample(cohort_samples)
-elif maybe:
-    st.session_state['maybe_choices'].append(st.session_state['sample_name'])
-    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
-    no_plot = generate_sample(cohort_samples)
-elif no_btn:
-    st.session_state['no_choices'].append(st.session_state['sample_name'])
-    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
-    no_plot = generate_sample(cohort_samples)
-
 col1.markdown(f'##### _Would you consider Sample {st.session_state["sample_name"]} a structural variant?_')
 col2.markdown(f'Prediction probability of {str(round(model_results.loc[model_results.IID == st.session_state["sample_name"], "Pred Values"].iloc[0], 2))}')
+st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
 
 if not st.session_state['no_plot']:
+    yes = btn1.button('Yes')
+    maybe = btn2.button('Maybe')
+    no_btn = btn3.button('No')
     plot_sample()
+else:
+    yes = btn1.button('Yes', disabled = True)
+    maybe = btn2.button('Maybe', disabled = True)
+    no_btn = btn3.button('No', disabled = True)
+
+if yes:
+    st.session_state['yes_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
+elif maybe:
+    st.session_state['maybe_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
+elif no_btn:
+    st.session_state['no_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
 
 # Add download button and make choices into dataframes/dictionaries that include gene name where CNV was found/not found
-
 with st.sidebar.expander("View Reported Samples"):
     st.data_editor(st.session_state['yes_choices'],
                     column_config={"value": st.column_config.TextColumn("'Yes' Choices")},
@@ -192,4 +189,3 @@ with st.sidebar.expander("View Reported Samples"):
                     hide_index=True,
                     use_container_width=True
                 )
-
