@@ -181,7 +181,7 @@ elif no_btn:
     st.session_state['no_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
     st.session_state['no_gene'].append(st.session_state["gene_choice"])
 
-side_btn1, side_btn2, side_btn3 = st.sidebar.columns(3)
+side_btn1, side_btn2, side_btn3 = st.sidebar.columns([0.5, 1, 0.5])
 
 # Add download button and make choices into dataframes/dictionaries that include gene name where CNV was found/not found
 with st.sidebar.expander("View Reported Samples"):
