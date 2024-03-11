@@ -12,7 +12,7 @@ import datetime
 from io import StringIO
 
 
-def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', title='snp plot', opacity = 1, cnvs = None, xmin= None, xmax = None):
+def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', title='snp plot', opacity = 1, midline = False, cnvs = None, xmin= None, xmax = None):
     d3 = px.colors.qualitative.D3
 
     cmap = {
@@ -51,7 +51,20 @@ def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', ti
         fig.update_traces(opacity = opacity)
         fig.add_traces(px.scatter(cnvs, x=x_col, y=y_col, hover_data=[gtype_col]).update_traces(marker_color="black").data)
     else:
-        fig = px.scatter(df, x=x_col, y=y_col, color=gtype_col, color_discrete_map=cmap_choice, width=650, height=497, labels=lmap, symbol_map=smap)
+        if gtype_col == None:
+            fig = px.scatter(df, x=x_col, y=y_col, color=gtype_col, color_discrete_sequence=['grey'], width=650, height=497, labels=lmap, symbol_map=smap, opacity=opacity)
+        else:
+            fig = px.scatter(df, x=x_col, y=y_col, color=gtype_col, color_discrete_map=cmap_choice, width=650, height=497, labels=lmap, symbol_map=smap, opacity=opacity)
+
+    if midline:
+        # Calculate the average y-value for each unique x-value
+        unique_x = np.linspace(min(df[x_col]), max(df[x_col]), num=50)
+
+        # Use cut to create bins and calculate average y within each bin
+        df['x_bin'] = pd.cut(df[x_col], bins=unique_x)
+        grouped_df = df[[x_col, 'x_bin', y_col]].groupby('x_bin').mean().reset_index()
+
+        fig.add_traces(px.line(grouped_df, x=x_col, y=y_col).update_traces(line=dict(color='red', width=3), name='Average Line').data)
 
     fig.update_xaxes(range=xlim, nticks=10, zeroline=False)
     fig.update_yaxes(range=ylim, nticks=10, zeroline=False)

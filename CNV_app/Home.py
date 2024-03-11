@@ -44,19 +44,26 @@ def plot_sample():
     # st.dataframe(pred_cnv)
 
     # predictions only
-    fig_lrr = plot_variants(pred_cnv[pred_cnv['ALT_pred']!='<INS>'], x_col='position', y_col='LogRRatio', gtype_col = 'ALT_pred', title=f'{st.session_state["gene_choice"]} Interval Predictions Only')
+    fig_lrr = plot_variants(pred_cnv[pred_cnv['ALT_pred']!='<INS>'], x_col='position', y_col='LogRRatio', gtype_col = 'ALT_pred', title=f'{st.session_state["gene_choice"]} Interval CNV Predictions Only')
     xmin, xmax = pred_cnv['position'].min(), pred_cnv['position'].max()
     st.plotly_chart(fig_lrr)
 
-    fig_baf = plot_variants(pred_cnv[pred_cnv['ALT_pred']=='<INS>'], x_col='position', y_col='BAlleleFreq', gtype_col = 'ALT_pred', title=f'{st.session_state["gene_choice"]} Interval Predictions Only', xmin=xmin, xmax=xmax)
+    fig_baf = plot_variants(pred_cnv[pred_cnv['ALT_pred']=='<INS>'], x_col='position', y_col='BAlleleFreq', gtype_col = 'ALT_pred', title=f'{st.session_state["gene_choice"]} Interval CNV Predictions Only', xmin=xmin, xmax=xmax)
     st.plotly_chart(fig_baf)
 
     # just CNV predicted variants among all variants
-    fig_lrr_full = plot_variants(sample_df_interval[sample_df_interval['ALT_pred']!='<INS>'], x_col='position', gtype_col = 'ALT_pred', y_col='LogRRatio', title=f'{st.session_state["gene_choice"]} Interval')
+    fig_lrr_full = plot_variants(sample_df_interval[sample_df_interval['ALT_pred']!='<INS>'], x_col='position', gtype_col = 'ALT_pred', y_col='LogRRatio', title=f'{st.session_state["gene_choice"]} Interval Colored by CNV Type')
     st.plotly_chart(fig_lrr_full)
     
-    fig_baf_full = plot_variants(sample_df_interval[(sample_df_interval['ALT_pred']!='<DEL>') & (sample_df_interval['ALT_pred']!='<DUP>')], x_col='position', gtype_col = 'ALT_pred', y_col='BAlleleFreq', title=f'{st.session_state["gene_choice"]} Interval')
+    fig_baf_full = plot_variants(sample_df_interval[(sample_df_interval['ALT_pred']!='<DEL>') & (sample_df_interval['ALT_pred']!='<DUP>')], x_col='position', gtype_col = 'ALT_pred', y_col='BAlleleFreq', title=f'{st.session_state["gene_choice"]} Interval Colored by CNV Type')
     st.plotly_chart(fig_baf_full)
+
+    # B&W all samples
+    bw_lrr_full = plot_variants(sample_df_interval, x_col='position', gtype_col = None, y_col='LogRRatio',midline=True, title=f'All Variants in {st.session_state["gene_choice"]} Interval with Average Line', opacity=0.3)
+    st.plotly_chart(bw_lrr_full)
+    
+    bw_baf_full = plot_variants(sample_df_interval, x_col='position', gtype_col = None, y_col='BAlleleFreq', title=f'All Variants in {st.session_state["gene_choice"]} Interval', opacity=0.3)
+    st.plotly_chart(bw_baf_full)
 
 ### Create sidebar options
 # will expand on model selection - need to distinguish test results based on model version
