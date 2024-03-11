@@ -101,14 +101,20 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
     k = min(len(open_ids), num_samples)
     test_filenames = random.sample(set(open_ids.IID), k=k)
 
-    test_set = master[['IID', 'label']][master['IID'].isin(test_filenames)]
-    test_set.reset_index(drop = True, inplace = True)
+    if 'label' in master.columns:
+        test_set = master[['IID', 'label']][master['IID'].isin(test_filenames)]
+        test_set.reset_index(drop = True, inplace = True)
+    else:
+        test_set = master.IID[master['IID'].isin(test_filenames)]
+        test_set = pd.DataFrame(test_set).reset_index(drop=True)
+        test_set.columns = ['IID']
+
     test_set['snp_metrics_path'] = 0
     remove = []
 
     for i in range(len(test_set)):
         sample = test_set.IID.iloc[i]
-        label = test_set.label.iloc[i]
+        # label = test_set.label.iloc[i]
         code = sample.split('_')[0]
         
         mfile1 = f'{snp_metrics_path}/{code}/snp_metrics_{code}/Sample_ID={sample}'

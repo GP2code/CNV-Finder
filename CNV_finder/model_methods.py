@@ -104,6 +104,11 @@ def model_predict(model_file, X_test_reshaped, test_samples, out_path, summary =
     # Display predicted classes and sample number to visually inspect
     results_reshaped = model_predictions.reshape(-1)
     test_results = pd.DataFrame({'IID':test_samples, 'Pred Values':results_reshaped})
+
+    # Binary value check for potential artifacts if over 20% of all samples have probability over 0.8 
+    test_results['AboveThreshold'] = test_results['Pred Values'] >= 0.8
+    test_results['Artifact Warning'] = np.where(sum(test_results['AboveThreshold']) >= 0.2*len(test_results), 1, 0)
+    test_results = test_results.drop(columns=['AboveThreshold'])
     
     print(test_results)
     test_results.to_csv(f'{out_path}_{X_test_reshaped.shape[1]}_windows_results.csv', index = False)

@@ -1,7 +1,6 @@
 import os
 import sys
 import subprocess
-import datetime
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -10,6 +9,7 @@ import plotly.express as px
 import plotly.io as pio
 import seaborn as sns
 import random
+from datetime import datetime
 from PIL import Image
 from st_aggrid import GridOptionsBuilder, AgGrid, GridUpdateMode, DataReturnMode
 from io import StringIO, BytesIO
@@ -72,7 +72,14 @@ cohort_name = st.sidebar.selectbox(label = 'Cohort Selection', label_visibility 
 
 # will expand on this selection to all NDDs
 st.sidebar.markdown('### Choose an NDD-Related Gene')
-genes = ['PARK2', 'LINGO2', 'SNCA', 'LRRK2', 'GBA', 'MAPT', 'APOE', 'ABI3', 'ABCA7', '22q_small', '22q']
+
+# Mix of disease-related genes
+# genes = ['PARK2', 'LINGO2', 'SNCA', 'LRRK2', 'GBA', 'MAPT', 'ABI3', 'ABCA7', '22q_small', '22q',
+#         'PARK7', 'ATP13A2', 'PINK1', 'EIF4G1', 'FBXO7', 'VPS35', 'PLA2G6', 'GIGYF2','DCTN1', 'DNAJC6', 'GCH1', 'GRN']
+
+# PD genes of interest
+genes = ['PARK2', 'SNCA', 'LRRK2', 'GBA', 'MAPT','PARK7', 'ATP13A2', 'PINK1', 'EIF4G1', 'FBXO7', 
+        'VPS35', 'PLA2G6', 'GIGYF2','DCTN1', 'DNAJC6', 'GCH1', 'GRN']
 gene_name = st.sidebar.selectbox(label = 'NDD-Related Gene Selection', label_visibility = 'collapsed', options=genes)
 
 # can change into a function
@@ -157,6 +164,9 @@ if option_change:
 col1, col2 = st.columns([3,0.7])
 btn0, btn1, btn2, btn3, btn4 = st.columns([1,0.5,0.5,0.5,0.5])
 
+if 'Artifact Warning' in model_results.columns and model_results['Artifact Warning'].iloc[0] == 1:
+    col1.error('Please note that a high number of samples in this gene were predicted to have CNVs, which may indicate that an artifact or other array-based issue is displayed.')
+
 col1.markdown(f'##### _Would you consider Sample {st.session_state["sample_name"]} a structural variant?_')
 col2.markdown(f'Prediction probability of {str(round(model_results.loc[model_results.IID == st.session_state["sample_name"], "Pred Values"].iloc[0], 2))}')
 st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
@@ -207,6 +217,10 @@ if save:
     maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene']})
     no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene']})
 
-    yes_report.to_csv('CNV_app/data/yes_samples.csv', index = False)
-    maybe_report.to_csv('CNV_app/data/maybe_samples.csv', index = False)
-    no_report.to_csv('CNV_app/data/no_samples.csv', index = False)
+    # time stamps for file naming to prevent overwriting
+    current_date = str(datetime.now().strftime("%Y-%m-%d"))
+    current_time = str(datetime.now().strftime("%H-%M-%S"))
+
+    yes_report.to_csv(f'CNV_app/data/yes_samples_{current_date}_{current_time}.csv', index = False)
+    maybe_report.to_csv(f'CNV_app/data/maybe_samples_{current_date}_{current_time}.csv', index = False)
+    no_report.to_csv(f'CNV_app/data/no_samples_{current_date}_{current_time}.csv', index = False)
