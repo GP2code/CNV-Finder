@@ -200,30 +200,28 @@ elif no_btn:
 
 side_btn1, side_btn2, side_btn3 = st.sidebar.columns([0.5, 1, 0.5])
 
+yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene']})
+maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene']})
+no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene']})
+
 # Add download button and make choices into dataframes/dictionaries that include gene name where CNV was found/not found
 with st.sidebar.expander("View Reported Samples"):
-    st.data_editor(st.session_state['yes_choices'],
-                    column_config={"value": st.column_config.TextColumn("'Yes' Choices")},
+    st.data_editor(yes_report,
                     hide_index=True,
                     use_container_width=True
                 )
-    st.data_editor(st.session_state['maybe_choices'],
-                    column_config={"value": st.column_config.TextColumn("'Maybe' Choices")},
+    st.data_editor(maybe_report,
                     hide_index=True,
                     use_container_width=True
                 )
-    st.data_editor(st.session_state['no_choices'],
-                    column_config={"value": st.column_config.TextColumn("'No' Choices")},
+    st.data_editor(no_report,
                     hide_index=True,
                     use_container_width=True
                 )
 
+# data_editor in streamlit 1.32 version has download to csv option built-in
 save = side_btn2.button('Save Report')
 if save:
-    yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene']})
-    maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene']})
-    no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene']})
-
     # time stamps for file naming to prevent overwriting
     current_date = str(datetime.now().strftime("%Y-%m-%d"))
     current_time = str(datetime.now().strftime("%H-%M-%S"))
