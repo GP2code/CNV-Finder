@@ -176,7 +176,9 @@ if 'Artifact Warning' in model_results.columns and model_results['Artifact Warni
 
 col1.markdown(f'##### _Would you consider Sample {st.session_state["sample_name"]} a structural variant?_')
 col2.markdown(f'Prediction probability of {str(round(model_results.loc[model_results.IID == st.session_state["sample_name"], "Pred Values"].iloc[0], 2))}')
-st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
+
+if len(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen']) == 0:
+    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
 
 if not st.session_state['no_plot']:
     yes = btn1.button('Yes')
@@ -189,12 +191,15 @@ else:
     no_btn = btn3.button('No', disabled = True)
 
 if yes:
+    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
     st.session_state['yes_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
     st.session_state['yes_gene'].append(st.session_state["gene_choice"])
 elif maybe:
+    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
     st.session_state['maybe_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
     st.session_state['maybe_gene'].append(st.session_state["gene_choice"])
 elif no_btn:
+    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
     st.session_state['no_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
     st.session_state['no_gene'].append(st.session_state["gene_choice"])
 
