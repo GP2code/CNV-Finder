@@ -18,7 +18,7 @@ from hold_method import plot_variants
 
 
 st.set_page_config(
-    page_title="CNV Prediction Evaluater",
+    page_title="CNV Prediction Evaluator",
     layout="wide",
     initial_sidebar_state="expanded"
 )
