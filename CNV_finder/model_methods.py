@@ -61,7 +61,7 @@ def prep_ml_datasets(train_path, test_path, feature_names):
     return X_train_reshaped, y_train, X_test_reshaped, train_samples, test_samples
 
 
-def train_binary_lstm(X_train_reshaped, y_train, out_path):
+def train_binary_lstm(X_train_reshaped, y_train, out_path, verbosity=1, val_data=None):
     # Eventually add model that returns sequences & multiple probabilities for each CNV class
     binary_lstm_model = tf.keras.models.Sequential([
         tf.keras.layers.LSTM(64, input_shape =(X_train_reshaped.shape[1], X_train_reshaped.shape[2]), return_sequences = True),
@@ -77,7 +77,7 @@ def train_binary_lstm(X_train_reshaped, y_train, out_path):
                                                                                        tf.keras.metrics.Recall()])
     
     # Fit model to reshaped training vectors - make verbose option/more customizable architecture later
-    binary_lstm_model.fit(X_train_reshaped, y_train, batch_size = 32, epochs=20) # default batch size = 32
+    binary_lstm_model.fit(X_train_reshaped, y_train, batch_size = 32, epochs=20, verbose=verbosity, validation_data = val_data) # default batch size = 32
     
     # pickle.dump(binary_lstm_model, open(f'{out_path}_{X_train_reshaped.shape[1]}_windows.sav', 'wb'))
     # joblib.dump(binary_lstm_model, f'{out_path}_{X_train_reshaped.shape[1]}_windows.sav')
