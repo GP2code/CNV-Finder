@@ -77,7 +77,7 @@ def train_binary_lstm(X_train_reshaped, y_train, out_path):
                                                                                        tf.keras.metrics.Recall()])
     
     # Fit model to reshaped training vectors - make verbose option/more customizable architecture later
-    binary_lstm_model.fit(X_train_reshaped, y_train, batch_size = 32, epochs=20, validation_split=0.2) # default batch size = 32
+    binary_lstm_model.fit(X_train_reshaped, y_train, batch_size = 32, epochs=20) # default batch size = 32
     
     # pickle.dump(binary_lstm_model, open(f'{out_path}_{X_train_reshaped.shape[1]}_windows.sav', 'wb'))
     # joblib.dump(binary_lstm_model, f'{out_path}_{X_train_reshaped.shape[1]}_windows.sav')

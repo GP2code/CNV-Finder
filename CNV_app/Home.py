@@ -26,7 +26,7 @@ st.set_page_config(
 # add to hold_data?
 def generate_sample(cohort_samples):
     st.session_state['no_plot'] = False
-    sample_options = cohort_samples[~cohort_samples.isin(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'])]
+    sample_options = cohort_samples[~cohort_samples.isin(st.session_state[samples_seen])]
 
     if len(sample_options) == 0:
         st.error("No more samples to run through!")
@@ -68,9 +68,9 @@ def plot_sample():
 ### Create sidebar options
 # will expand on model selection - need to distinguish test results based on model version
 st.sidebar.markdown('### Choose a Model')
-models = ['Preliminary Deletion Model']
+models = ['Preliminary Deletion Model', 'Preliminary Duplication Model']
 model_name = st.sidebar.selectbox(label = 'Model Selection', label_visibility = 'collapsed', options=models)
-models_dict = {'Preliminary Deletion Model': 'prelim_del_model'}
+models_dict = {'Preliminary Deletion Model': 'prelim_del_model', 'Preliminary Duplication Model': 'prelim_dup_model'}
 
 # split GP2 by cohort but also provide full release option
 st.sidebar.markdown('### Choose a GP2 Cohort')
@@ -81,12 +81,16 @@ cohort_name = st.sidebar.selectbox(label = 'Cohort Selection', label_visibility 
 st.sidebar.markdown('### Choose an NDD-Related Gene')
 
 # Mix of disease-related genes
-# genes = ['PARK2', 'LINGO2', 'SNCA', 'LRRK2', 'GBA', 'MAPT', 'ABI3', 'ABCA7', '22q_small', '22q',
+# Main focus for benchmarking
+genes = ['PARK2', 'MAPT', '22q_small', '22q']
+
+# Complete list
+# genes = ['PARK2', 'APP', 'LINGO2', 'SNCA', 'CHRNA7', 'CYFIP1', 'CPNE4', 'TPCN1', 'PSEN1', 'CREB1', 'LRRK2', 'GBA', 'MAPT', 'ABI3', 'ABCA7', '22q_small', '22q',
 #         'PARK7', 'ATP13A2', 'PINK1', 'EIF4G1', 'FBXO7', 'VPS35', 'PLA2G6', 'GIGYF2','DCTN1', 'DNAJC6', 'GCH1', 'GRN']
 
 # PD genes of interest
-genes = ['PARK2', 'SNCA', 'LRRK2', 'GBA', 'MAPT','PARK7', 'ATP13A2', 'PINK1', 'EIF4G1', 'FBXO7', 
-        'VPS35', 'PLA2G6', 'GIGYF2','DCTN1', 'DNAJC6', 'GCH1', 'GRN']
+# genes = ['PARK2', 'SNCA', 'LRRK2', 'GBA', 'MAPT','PARK7', 'ATP13A2', 'PINK1', 'EIF4G1', 'FBXO7', 
+#           'VPS35', 'PLA2G6', 'GIGYF2','DCTN1', 'DNAJC6', 'GCH1', 'GRN']
 gene_name = st.sidebar.selectbox(label = 'NDD-Related Gene Selection', label_visibility = 'collapsed', options=genes)
 
 # can change into a function
@@ -115,7 +119,11 @@ st.title('Evaluation of CNV Predictions')
 model_results = pd.read_csv(f'CNV_app/data/{models_dict[model_name]}/{cohort_name}/{gene_name}/app/GP2_{cohort_name}_{gene_name}_app_ready.csv')
 
 with st.expander("Filter Displayed Samples"):
-    confidence = st.select_slider('Display samples with prediction probability of at least:', options=[0.8, 0.9, 1], value = 1)
+    if st.session_state["model_choice"] == 'prelim_del_model':
+        probab_options = [0.6, 0.7, 0.8, 0.9, 1]
+    else:
+        probab_options = [0.8, 0.9, 1]
+    confidence = st.select_slider('Display samples with prediction probability of at least:', options=probab_options, value = 1)
 
     # adjust these thresholds 
     iqr_range = np.linspace(min(abs(model_results['abs_iqr_lrr'])), max(abs(model_results['abs_iqr_lrr'])), num=50)
@@ -149,8 +157,9 @@ else:
     # cohort_samples = model_results.IID[model_results['Pred Values'] >= confidence]
     cohort_samples = model_results.IID[model_results['Pred Values'] == 1]
 
-if f'{st.session_state["gene_choice"]}_sample_seen' not in st.session_state:
-    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'] = []
+samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
+if samples_seen not in st.session_state:
+    st.session_state[samples_seen] = []
 if 'yes_choices' not in st.session_state:
     st.session_state['yes_choices'] = []
 if 'maybe_choices' not in st.session_state:
@@ -163,6 +172,12 @@ if 'maybe_gene' not in st.session_state:
     st.session_state['maybe_gene'] = []
 if 'no_gene' not in st.session_state:
     st.session_state['no_gene'] = []
+if 'yes_model' not in st.session_state:
+    st.session_state['yes_model'] = []
+if 'maybe_model' not in st.session_state:
+    st.session_state['maybe_model'] = []
+if 'no_model' not in st.session_state:
+    st.session_state['no_model'] = []
 if 'sample_name' not in st.session_state:
     generate_sample(cohort_samples)
 if option_change:
@@ -177,8 +192,9 @@ if 'Artifact Warning' in model_results.columns and model_results['Artifact Warni
 col1.markdown(f'##### _Would you consider Sample {st.session_state["sample_name"]} a structural variant?_')
 col2.markdown(f'Prediction probability of {str(round(model_results.loc[model_results.IID == st.session_state["sample_name"], "Pred Values"].iloc[0], 2))}')
 
-if len(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen']) == 0:
-    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
+# add cohort and model to sample seen name for when change cohort or model but same gene
+if len(st.session_state[samples_seen]) == 0:
+    st.session_state[samples_seen].append(st.session_state['sample_name'])
 
 if not st.session_state['no_plot']:
     yes = btn1.button('Yes')
@@ -191,23 +207,26 @@ else:
     no_btn = btn3.button('No', disabled = True)
 
 if yes:
-    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
-    st.session_state['yes_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
+    st.session_state[samples_seen].append(st.session_state['sample_name'])
+    st.session_state['yes_choices'].append(st.session_state[samples_seen][-2])
     st.session_state['yes_gene'].append(st.session_state["gene_choice"])
+    st.session_state['yes_model'].append(st.session_state["model_choice"])
 elif maybe:
-    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
-    st.session_state['maybe_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
+    st.session_state[samples_seen].append(st.session_state['sample_name'])
+    st.session_state['maybe_choices'].append(st.session_state[samples_seen][-2])
     st.session_state['maybe_gene'].append(st.session_state["gene_choice"])
+    st.session_state['maybe_model'].append(st.session_state["model_choice"])
 elif no_btn:
-    st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'].append(st.session_state['sample_name'])
-    st.session_state['no_choices'].append(st.session_state[f'{st.session_state["gene_choice"]}_sample_seen'][-2])
+    st.session_state[samples_seen].append(st.session_state['sample_name'])
+    st.session_state['no_choices'].append(st.session_state[samples_seen][-2])
     st.session_state['no_gene'].append(st.session_state["gene_choice"])
+    st.session_state['no_model'].append(st.session_state["model_choice"])
 
 side_btn1, side_btn2, side_btn3 = st.sidebar.columns([0.5, 1, 0.5])
 
-yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene']})
-maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene']})
-no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene']})
+yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene'], 'Model': st.session_state['yes_model']})
+maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene'], 'Model': st.session_state['maybe_model']})
+no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene'], 'Model': st.session_state['no_model']})
 
 # Add download button and make choices into dataframes/dictionaries that include gene name where CNV was found/not found
 with st.sidebar.expander("View Reported Samples"):
