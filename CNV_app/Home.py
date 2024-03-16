@@ -70,7 +70,7 @@ def plot_sample():
 st.sidebar.markdown('### Choose a Model')
 models = ['Preliminary Deletion Model', 'Preliminary Duplication Model']
 model_name = st.sidebar.selectbox(label = 'Model Selection', label_visibility = 'collapsed', options=models)
-models_dict = {'Preliminary Deletion Model': 'prelim_del_model', 'Preliminary Duplication Model': 'prelim_dup_model'}
+models_dict = {'Preliminary Deletion Model': 'del_prelim_model', 'Preliminary Duplication Model': 'dup_prelim_model'}
 
 # split GP2 by cohort but also provide full release option
 st.sidebar.markdown('### Choose a GP2 Cohort')
@@ -124,7 +124,7 @@ else:
     model_results = pd.read_csv(model_path)
 
     with st.expander("Filter Displayed Samples"):
-        if st.session_state["model_choice"] == 'prelim_dup_model':
+        if st.session_state["model_choice"] == 'dup_prelim_model':
             probab_options = [0.6, 0.7, 0.8, 0.9, 1]
         else:
             probab_options = [0.8, 0.9, 1]
@@ -189,7 +189,7 @@ else:
         generate_sample(cohort_samples)
 
     col1, col2 = st.columns([3,0.7])
-    btn0, btn1, btn2, btn3, btn4 = st.columns([1,0.5,0.5,0.5,0.5])
+    btn1, btn2, btn3, btn4 = st.columns([0.5,0.5,0.5,0.5])
 
     # Display any initial warnings
     if 'Artifact Warning' in model_results.columns and model_results['Artifact Warning'].iloc[0] == 1:
@@ -202,33 +202,46 @@ else:
         st.session_state[samples_seen].append(st.session_state['sample_name'])
 
     if not st.session_state['no_plot']:
-        yes = btn1.button('Yes')
-        maybe = btn2.button('Maybe')
-        no_btn = btn3.button('No')
+        yes = btn1.button('Yes', use_container_width = True)
+        maybe = btn2.button('Maybe', use_container_width = True)
+        no_btn = btn3.button('No', use_container_width = True)
+        other_cnv = btn4.button('Other CNV', use_container_width = True)
         plot_sample()
     else:
-        yes = btn1.button('Yes', disabled = True)
-        maybe = btn2.button('Maybe', disabled = True)
-        no_btn = btn3.button('No', disabled = True)
+        yes = btn1.button('Yes', disabled = True, use_container_width = True)
+        maybe = btn2.button('Maybe', disabled = True, use_container_width = True)
+        no_btn = btn3.button('No', disabled = True, use_container_width = True)
+        other_cnv = btn4.button('Other CNV', disabled = True, use_container_width = True)
 
     if yes:
         samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
         st.session_state[samples_seen].append(st.session_state['sample_name'])
         st.session_state['yes_choices'].append(st.session_state[samples_seen][-2])
         st.session_state['yes_gene'].append(st.session_state["gene_choice"])
-        st.session_state['yes_type'].append(st.session_state["model_choice"].split('_')[1])
+        st.session_state['yes_type'].append(st.session_state["model_choice"].split('_')[0])
     elif maybe:
         samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
         st.session_state[samples_seen].append(st.session_state['sample_name'])
         st.session_state['maybe_choices'].append(st.session_state[samples_seen][-2])
         st.session_state['maybe_gene'].append(st.session_state["gene_choice"])
-        st.session_state['maybe_type'].append(st.session_state["model_choice"].split('_')[1])
+        st.session_state['maybe_type'].append(st.session_state["model_choice"].split('_')[0])
     elif no_btn:
         samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
         st.session_state[samples_seen].append(st.session_state['sample_name'])
         st.session_state['no_choices'].append(st.session_state[samples_seen][-2])
         st.session_state['no_gene'].append(st.session_state["gene_choice"])
-        st.session_state['no_type'].append(st.session_state["model_choice"].split('_')[1])
+        st.session_state['no_type'].append(st.session_state["model_choice"].split('_')[0])
+    elif other_cnv:
+        samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
+        st.session_state[samples_seen].append(st.session_state['sample_name'])
+        st.session_state['yes_choices'].append(st.session_state[samples_seen][-2])
+        st.session_state['yes_gene'].append(st.session_state["gene_choice"])
+        
+        cnv_type = st.session_state["model_choice"].split('_')[0]
+        if cnv_type == 'del':
+            st.session_state['yes_type'].append('dup')
+        elif cnv_type == 'dup':
+            st.session_state['yes_type'].append('del')
 
     side_btn1, side_btn2, side_btn3 = st.sidebar.columns([0.5, 1, 0.5])
     
