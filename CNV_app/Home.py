@@ -82,7 +82,7 @@ st.sidebar.markdown('### Choose an NDD-Related Gene')
 
 # Mix of disease-related genes
 # Main focus for benchmarking
-genes = ['PARK2', 'MAPT', '22q_small', '22q']
+genes = ['PARK2', 'MAPT', '22q_small']
 
 # Complete list
 # genes = ['PARK2', 'APP', 'LINGO2', 'SNCA', 'CHRNA7', 'CYFIP1', 'CPNE4', 'TPCN1', 'PSEN1', 'CREB1', 'LRRK2', 'GBA', 'MAPT', 'ABI3', 'ABCA7', '22q_small', '22q',
@@ -119,7 +119,7 @@ st.title('Evaluation of CNV Predictions')
 model_results = pd.read_csv(f'CNV_app/data/{models_dict[model_name]}/{cohort_name}/{gene_name}/app/GP2_{cohort_name}_{gene_name}_app_ready.csv')
 
 with st.expander("Filter Displayed Samples"):
-    if st.session_state["model_choice"] == 'prelim_del_model':
+    if st.session_state["model_choice"] == 'prelim_dup_model':
         probab_options = [0.6, 0.7, 0.8, 0.9, 1]
     else:
         probab_options = [0.8, 0.9, 1]
@@ -207,16 +207,19 @@ else:
     no_btn = btn3.button('No', disabled = True)
 
 if yes:
+    samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
     st.session_state[samples_seen].append(st.session_state['sample_name'])
     st.session_state['yes_choices'].append(st.session_state[samples_seen][-2])
     st.session_state['yes_gene'].append(st.session_state["gene_choice"])
     st.session_state['yes_model'].append(st.session_state["model_choice"])
 elif maybe:
+    samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
     st.session_state[samples_seen].append(st.session_state['sample_name'])
     st.session_state['maybe_choices'].append(st.session_state[samples_seen][-2])
     st.session_state['maybe_gene'].append(st.session_state["gene_choice"])
     st.session_state['maybe_model'].append(st.session_state["model_choice"])
 elif no_btn:
+    samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
     st.session_state[samples_seen].append(st.session_state['sample_name'])
     st.session_state['no_choices'].append(st.session_state[samples_seen][-2])
     st.session_state['no_gene'].append(st.session_state["gene_choice"])

@@ -85,6 +85,7 @@ def train_binary_lstm(X_train_reshaped, y_train, out_path, verbosity=1, val_data
     # Save model - keras.src module issue in swarm job
     binary_lstm_model.save(f'{out_path}_{X_train_reshaped.shape[1]}_windows.keras')
 
+
 def model_predict(model_file, X_test_reshaped, test_samples, out_path, summary = True):
     # Load in model - keras.src module issue in swarm job
     # loaded_model = pickle.load(file, 'rb')
