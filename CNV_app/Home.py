@@ -177,12 +177,12 @@ else:
         st.session_state['maybe_gene'] = []
     if 'no_gene' not in st.session_state:
         st.session_state['no_gene'] = []
-    if 'yes_model' not in st.session_state:
-        st.session_state['yes_model'] = []
-    if 'maybe_model' not in st.session_state:
-        st.session_state['maybe_model'] = []
-    if 'no_model' not in st.session_state:
-        st.session_state['no_model'] = []
+    if 'yes_type' not in st.session_state:
+        st.session_state['yes_type'] = []
+    if 'maybe_type' not in st.session_state:
+        st.session_state['maybe_type'] = []
+    if 'no_type' not in st.session_state:
+        st.session_state['no_type'] = []
     if 'sample_name' not in st.session_state:
         generate_sample(cohort_samples)
     if option_change:
@@ -216,25 +216,25 @@ else:
         st.session_state[samples_seen].append(st.session_state['sample_name'])
         st.session_state['yes_choices'].append(st.session_state[samples_seen][-2])
         st.session_state['yes_gene'].append(st.session_state["gene_choice"])
-        st.session_state['yes_model'].append(st.session_state["model_choice"])
+        st.session_state['yes_type'].append(st.session_state["model_choice"].split('_')[1])
     elif maybe:
         samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
         st.session_state[samples_seen].append(st.session_state['sample_name'])
         st.session_state['maybe_choices'].append(st.session_state[samples_seen][-2])
         st.session_state['maybe_gene'].append(st.session_state["gene_choice"])
-        st.session_state['maybe_model'].append(st.session_state["model_choice"])
+        st.session_state['maybe_type'].append(st.session_state["model_choice"].split('_')[1])
     elif no_btn:
         samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
         st.session_state[samples_seen].append(st.session_state['sample_name'])
         st.session_state['no_choices'].append(st.session_state[samples_seen][-2])
         st.session_state['no_gene'].append(st.session_state["gene_choice"])
-        st.session_state['no_model'].append(st.session_state["model_choice"])
+        st.session_state['no_type'].append(st.session_state["model_choice"].split('_')[1])
 
     side_btn1, side_btn2, side_btn3 = st.sidebar.columns([0.5, 1, 0.5])
-
-    yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene'], 'Model': st.session_state['yes_model']})
-    maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene'], 'Model': st.session_state['maybe_model']})
-    no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene'], 'Model': st.session_state['no_model']})
+    
+    yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene'], 'Type': st.session_state['yes_type']})
+    maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene'], 'Type': st.session_state['maybe_type']})
+    no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene'], 'Type': st.session_state['no_type']})
 
     # Add download button and make choices into dataframes/dictionaries that include gene name where CNV was found/not found
     with st.sidebar.expander("View Reported Samples"):
