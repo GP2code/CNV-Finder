@@ -84,7 +84,7 @@ st.sidebar.markdown('### Choose an NDD-Related Gene')
 # Main focus for benchmarking
 genes = ['PARK2', 'MAPT', '22q_small']
 
-# Complete list
+# Complete list of explored genes
 # genes = ['PARK2', 'APP', 'LINGO2', 'SNCA', 'CHRNA7', 'CYFIP1', 'CPNE4', 'TPCN1', 'PSEN1', 'CREB1', 'LRRK2', 'GBA', 'MAPT', 'ABI3', 'ABCA7', '22q_small', '22q',
 #         'PARK7', 'ATP13A2', 'PINK1', 'EIF4G1', 'FBXO7', 'VPS35', 'PLA2G6', 'GIGYF2','DCTN1', 'DNAJC6', 'GCH1', 'GRN']
 
@@ -116,143 +116,148 @@ st.session_state['gene_choice'] = gene_name
 # second page: upload text file and check plots
 
 st.title('Evaluation of CNV Predictions')
-model_results = pd.read_csv(f'CNV_app/data/{models_dict[model_name]}/{cohort_name}/{gene_name}/app/GP2_{cohort_name}_{gene_name}_app_ready.csv')
+model_path = f'CNV_app/data/{models_dict[model_name]}/{cohort_name}/{gene_name}/app/GP2_{cohort_name}_{gene_name}_app_ready.csv'
 
-with st.expander("Filter Displayed Samples"):
-    if st.session_state["model_choice"] == 'prelim_dup_model':
-        probab_options = [0.6, 0.7, 0.8, 0.9, 1]
+if not os.path.isfile(model_path):
+    st.error('No CNVs to display!')
+else:
+    model_results = pd.read_csv(model_path)
+
+    with st.expander("Filter Displayed Samples"):
+        if st.session_state["model_choice"] == 'prelim_dup_model':
+            probab_options = [0.6, 0.7, 0.8, 0.9, 1]
+        else:
+            probab_options = [0.8, 0.9, 1]
+        confidence = st.select_slider('Display samples with prediction probability of at least:', options=probab_options, value = 1)
+
+        # adjust these thresholds 
+        iqr_range = np.linspace(min(abs(model_results['abs_iqr_lrr'])), max(abs(model_results['abs_iqr_lrr'])), num=50)
+        iqr_threshold = st.select_slider('Maximum Absolute Value LRR range threshold:', options=iqr_range, value = max(iqr_range))
+
+        # potentially use standard deviations here
+        min_cnv_count = min(model_results['cnv_range_count'])
+        max_cnv_count = max(model_results['cnv_range_count'])
+        lower_range = np.linspace(min_cnv_count, max_cnv_count - (0.5 * max_cnv_count), num=50)
+        upper_range = np.linspace(max_cnv_count- (0.5 * max_cnv_count), max_cnv_count, num=50)
+        selected_value_lower = min(lower_range)
+        selected_value_higher = max(upper_range)
+
+        # lower_range = range(40, 110, 10)
+        # upper_range = range(100, 500, 50)
+        # selected_value_lower = 80
+        # selected_value_higher = 300
+
+        lower_range_threshold = st.select_slider('Minimum threshold for CNV count:', options=lower_range, value = selected_value_lower)
+        upper_range_threshold = st.select_slider('Maximum threshold for CNV count :', options=upper_range, value = selected_value_higher)
+
+        exp1, exp2, exp3 = st.columns([1.5,1,1])
+        threshold_submit  = exp2.checkbox('Plot With Thresholds')
+
+    if threshold_submit:
+        # may need to add 'submit' button bc of delay with generating IIDs with these metrics
+        threshold_results = model_results[(model_results['abs_iqr_lrr'] <= iqr_threshold) & (model_results['cnv_range_count'] >= lower_range_threshold) & 
+                                        (model_results['cnv_range_count'] <= upper_range_threshold) & (model_results['Pred Values'] >= confidence)]
+        cohort_samples = threshold_results['IID']
     else:
-        probab_options = [0.8, 0.9, 1]
-    confidence = st.select_slider('Display samples with prediction probability of at least:', options=probab_options, value = 1)
+        # cohort_samples = model_results.IID[model_results['Pred Values'] >= confidence]
+        cohort_samples = model_results.IID[model_results['Pred Values'] == 1]
 
-    # adjust these thresholds 
-    iqr_range = np.linspace(min(abs(model_results['abs_iqr_lrr'])), max(abs(model_results['abs_iqr_lrr'])), num=50)
-    iqr_threshold = st.select_slider('Maximum Absolute Value LRR range threshold:', options=iqr_range, value = max(iqr_range))
-
-    # potentially use standard deviations here
-    min_cnv_count = min(model_results['cnv_range_count'])
-    max_cnv_count = max(model_results['cnv_range_count'])
-    lower_range = np.linspace(min_cnv_count, max_cnv_count - (0.5 * max_cnv_count), num=50)
-    upper_range = np.linspace(max_cnv_count- (0.5 * max_cnv_count), max_cnv_count, num=50)
-    selected_value_lower = min(lower_range)
-    selected_value_higher = max(upper_range)
-
-    # lower_range = range(40, 110, 10)
-    # upper_range = range(100, 500, 50)
-    # selected_value_lower = 80
-    # selected_value_higher = 300
-
-    lower_range_threshold = st.select_slider('Minimum threshold for CNV count:', options=lower_range, value = selected_value_lower)
-    upper_range_threshold = st.select_slider('Maximum threshold for CNV count :', options=upper_range, value = selected_value_higher)
-
-    exp1, exp2, exp3 = st.columns([1.5,1,1])
-    threshold_submit  = exp2.checkbox('Plot With Thresholds')
-
-if threshold_submit:
-    # may need to add 'submit' button bc of delay with generating IIDs with these metrics
-    threshold_results = model_results[(model_results['abs_iqr_lrr'] <= iqr_threshold) & (model_results['cnv_range_count'] >= lower_range_threshold) & 
-                                    (model_results['cnv_range_count'] <= upper_range_threshold) & (model_results['Pred Values'] >= confidence)]
-    cohort_samples = threshold_results['IID']
-else:
-    # cohort_samples = model_results.IID[model_results['Pred Values'] >= confidence]
-    cohort_samples = model_results.IID[model_results['Pred Values'] == 1]
-
-samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
-if samples_seen not in st.session_state:
-    st.session_state[samples_seen] = []
-if 'yes_choices' not in st.session_state:
-    st.session_state['yes_choices'] = []
-if 'maybe_choices' not in st.session_state:
-    st.session_state['maybe_choices'] = []
-if 'no_choices' not in st.session_state:
-    st.session_state['no_choices'] = []
-if 'yes_gene' not in st.session_state:
-    st.session_state['yes_gene'] = []
-if 'maybe_gene' not in st.session_state:
-    st.session_state['maybe_gene'] = []
-if 'no_gene' not in st.session_state:
-    st.session_state['no_gene'] = []
-if 'yes_model' not in st.session_state:
-    st.session_state['yes_model'] = []
-if 'maybe_model' not in st.session_state:
-    st.session_state['maybe_model'] = []
-if 'no_model' not in st.session_state:
-    st.session_state['no_model'] = []
-if 'sample_name' not in st.session_state:
-    generate_sample(cohort_samples)
-if option_change:
-    generate_sample(cohort_samples)
-
-col1, col2 = st.columns([3,0.7])
-btn0, btn1, btn2, btn3, btn4 = st.columns([1,0.5,0.5,0.5,0.5])
-
-if 'Artifact Warning' in model_results.columns and model_results['Artifact Warning'].iloc[0] == 1:
-    col1.error('Please note that a high number of samples in this gene were predicted to have CNVs, which may indicate that an artifact or other array-based issue is displayed.')
-
-col1.markdown(f'##### _Would you consider Sample {st.session_state["sample_name"]} a structural variant?_')
-col2.markdown(f'Prediction probability of {str(round(model_results.loc[model_results.IID == st.session_state["sample_name"], "Pred Values"].iloc[0], 2))}')
-
-# add cohort and model to sample seen name for when change cohort or model but same gene
-if len(st.session_state[samples_seen]) == 0:
-    st.session_state[samples_seen].append(st.session_state['sample_name'])
-
-if not st.session_state['no_plot']:
-    yes = btn1.button('Yes')
-    maybe = btn2.button('Maybe')
-    no_btn = btn3.button('No')
-    plot_sample()
-else:
-    yes = btn1.button('Yes', disabled = True)
-    maybe = btn2.button('Maybe', disabled = True)
-    no_btn = btn3.button('No', disabled = True)
-
-if yes:
     samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
-    st.session_state[samples_seen].append(st.session_state['sample_name'])
-    st.session_state['yes_choices'].append(st.session_state[samples_seen][-2])
-    st.session_state['yes_gene'].append(st.session_state["gene_choice"])
-    st.session_state['yes_model'].append(st.session_state["model_choice"])
-elif maybe:
-    samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
-    st.session_state[samples_seen].append(st.session_state['sample_name'])
-    st.session_state['maybe_choices'].append(st.session_state[samples_seen][-2])
-    st.session_state['maybe_gene'].append(st.session_state["gene_choice"])
-    st.session_state['maybe_model'].append(st.session_state["model_choice"])
-elif no_btn:
-    samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
-    st.session_state[samples_seen].append(st.session_state['sample_name'])
-    st.session_state['no_choices'].append(st.session_state[samples_seen][-2])
-    st.session_state['no_gene'].append(st.session_state["gene_choice"])
-    st.session_state['no_model'].append(st.session_state["model_choice"])
+    if samples_seen not in st.session_state:
+        st.session_state[samples_seen] = []
+    if 'yes_choices' not in st.session_state:
+        st.session_state['yes_choices'] = []
+    if 'maybe_choices' not in st.session_state:
+        st.session_state['maybe_choices'] = []
+    if 'no_choices' not in st.session_state:
+        st.session_state['no_choices'] = []
+    if 'yes_gene' not in st.session_state:
+        st.session_state['yes_gene'] = []
+    if 'maybe_gene' not in st.session_state:
+        st.session_state['maybe_gene'] = []
+    if 'no_gene' not in st.session_state:
+        st.session_state['no_gene'] = []
+    if 'yes_model' not in st.session_state:
+        st.session_state['yes_model'] = []
+    if 'maybe_model' not in st.session_state:
+        st.session_state['maybe_model'] = []
+    if 'no_model' not in st.session_state:
+        st.session_state['no_model'] = []
+    if 'sample_name' not in st.session_state:
+        generate_sample(cohort_samples)
+    if option_change:
+        generate_sample(cohort_samples)
 
-side_btn1, side_btn2, side_btn3 = st.sidebar.columns([0.5, 1, 0.5])
+    col1, col2 = st.columns([3,0.7])
+    btn0, btn1, btn2, btn3, btn4 = st.columns([1,0.5,0.5,0.5,0.5])
 
-yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene'], 'Model': st.session_state['yes_model']})
-maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene'], 'Model': st.session_state['maybe_model']})
-no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene'], 'Model': st.session_state['no_model']})
+    # Display any initial warnings
+    if 'Artifact Warning' in model_results.columns and model_results['Artifact Warning'].iloc[0] == 1:
+        col1.error('Please note that a high number of samples in this gene were predicted to have CNVs, which may indicate that an artifact or other array-based issue is displayed.')
 
-# Add download button and make choices into dataframes/dictionaries that include gene name where CNV was found/not found
-with st.sidebar.expander("View Reported Samples"):
-    st.data_editor(yes_report,
-                    hide_index=True,
-                    use_container_width=True
-                )
-    st.data_editor(maybe_report,
-                    hide_index=True,
-                    use_container_width=True
-                )
-    st.data_editor(no_report,
-                    hide_index=True,
-                    use_container_width=True
-                )
+    col1.markdown(f'##### _Would you consider Sample {st.session_state["sample_name"]} a structural variant?_')
+    col2.markdown(f'Prediction probability of {str(round(model_results.loc[model_results.IID == st.session_state["sample_name"], "Pred Values"].iloc[0], 2))}')
 
-# data_editor in streamlit 1.32 version has download to csv option built-in
-save = side_btn2.button('Save Report')
-if save:
-    # time stamps for file naming to prevent overwriting
-    current_date = str(datetime.now().strftime("%Y-%m-%d"))
-    current_time = str(datetime.now().strftime("%H-%M-%S"))
+    if len(st.session_state[samples_seen]) == 0:
+        st.session_state[samples_seen].append(st.session_state['sample_name'])
 
-    yes_report.to_csv(f'CNV_app/data/yes_samples_{current_date}_{current_time}.csv', index = False)
-    maybe_report.to_csv(f'CNV_app/data/maybe_samples_{current_date}_{current_time}.csv', index = False)
-    no_report.to_csv(f'CNV_app/data/no_samples_{current_date}_{current_time}.csv', index = False)
+    if not st.session_state['no_plot']:
+        yes = btn1.button('Yes')
+        maybe = btn2.button('Maybe')
+        no_btn = btn3.button('No')
+        plot_sample()
+    else:
+        yes = btn1.button('Yes', disabled = True)
+        maybe = btn2.button('Maybe', disabled = True)
+        no_btn = btn3.button('No', disabled = True)
+
+    if yes:
+        samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
+        st.session_state[samples_seen].append(st.session_state['sample_name'])
+        st.session_state['yes_choices'].append(st.session_state[samples_seen][-2])
+        st.session_state['yes_gene'].append(st.session_state["gene_choice"])
+        st.session_state['yes_model'].append(st.session_state["model_choice"])
+    elif maybe:
+        samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
+        st.session_state[samples_seen].append(st.session_state['sample_name'])
+        st.session_state['maybe_choices'].append(st.session_state[samples_seen][-2])
+        st.session_state['maybe_gene'].append(st.session_state["gene_choice"])
+        st.session_state['maybe_model'].append(st.session_state["model_choice"])
+    elif no_btn:
+        samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
+        st.session_state[samples_seen].append(st.session_state['sample_name'])
+        st.session_state['no_choices'].append(st.session_state[samples_seen][-2])
+        st.session_state['no_gene'].append(st.session_state["gene_choice"])
+        st.session_state['no_model'].append(st.session_state["model_choice"])
+
+    side_btn1, side_btn2, side_btn3 = st.sidebar.columns([0.5, 1, 0.5])
+
+    yes_report = pd.DataFrame({'Yes Samples': st.session_state['yes_choices'], 'Interval': st.session_state['yes_gene'], 'Model': st.session_state['yes_model']})
+    maybe_report = pd.DataFrame({'Maybe Samples': st.session_state['maybe_choices'], 'Interval': st.session_state['maybe_gene'], 'Model': st.session_state['maybe_model']})
+    no_report = pd.DataFrame({'No Samples': st.session_state['no_choices'], 'Interval': st.session_state['no_gene'], 'Model': st.session_state['no_model']})
+
+    # Add download button and make choices into dataframes/dictionaries that include gene name where CNV was found/not found
+    with st.sidebar.expander("View Reported Samples"):
+        st.data_editor(yes_report,
+                        hide_index=True,
+                        use_container_width=True
+                    )
+        st.data_editor(maybe_report,
+                        hide_index=True,
+                        use_container_width=True
+                    )
+        st.data_editor(no_report,
+                        hide_index=True,
+                        use_container_width=True
+                    )
+
+    # data_editor in streamlit 1.32 version has download to csv option built-in
+    save = side_btn2.button('Save Report')
+    if save:
+        # time stamps for file naming to prevent overwriting
+        current_date = str(datetime.now().strftime("%Y-%m-%d"))
+        current_time = str(datetime.now().strftime("%H-%M-%S"))
+
+        yes_report.to_csv(f'CNV_app/data/yes_samples_{current_date}_{current_time}.csv', index = False)
+        maybe_report.to_csv(f'CNV_app/data/maybe_samples_{current_date}_{current_time}.csv', index = False)
+        no_report.to_csv(f'CNV_app/data/no_samples_{current_date}_{current_time}.csv', index = False)
