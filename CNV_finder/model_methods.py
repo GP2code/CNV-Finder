@@ -20,13 +20,11 @@ from sklearn.preprocessing import StandardScaler, normalize
 # Supress copy warning.
 pd.options.mode.chained_assignment = None
 
+
 # Eventually add CNN/other LSTM architectures
-def prep_ml_datasets(train_path, test_path, feature_names):
+def prep_ml_datasets(train_path, feature_names, test_path = None):
     train_df = pd.read_csv(train_path)
     train_df.rename(columns = {'Unnamed: 0': 'window'}, inplace = True)
-
-    test_df = pd.read_csv(test_path)
-    test_df.rename(columns = {'Unnamed: 0': 'window'}, inplace = True)
     
     window_count = len(train_df.window.value_counts())
     print("Windows: ", window_count)
@@ -40,26 +38,34 @@ def prep_ml_datasets(train_path, test_path, feature_names):
     print("Training labels:")
     print(y_train.shape)
 
-    # No testing labels - will check accuracy with manual observation for high probabiilties
-    print("Testing features:")
-    X_test = test_df[feature_names]
-    print(X_test.shape)
-
     # Workaround for potentially multiple repeating samples
     train_samples = list(train_df.IID[train_df['window'] == 0].values)
-    test_samples = list(test_df.IID[test_df['window'] == 0].values)
 
     # Reshape to 3D array (number of samples, time steps per sample, number of features)
     X_train_reshaped = X_train.to_numpy().reshape((int(X_train.shape[0]/window_count), window_count, X_train.shape[1]))
-    X_test_reshaped = X_test.to_numpy().reshape((int(X_test.shape[0]/window_count), window_count, X_test.shape[1]))
 
     print("Reshaped training features:")
     print(X_train_reshaped.shape)
-    print("Reshaped testing features:")
-    print(X_test_reshaped.shape)
+    
+    if test_path:
+        test_df = pd.read_csv(test_path)
+        test_df.rename(columns = {'Unnamed: 0': 'window'}, inplace = True)
+        
+        # No testing labels - will check accuracy with manual observation for high probabiilties
+        print("Testing features:")
+        X_test = test_df[feature_names]
+        print(X_test.shape)
+
+        test_samples = list(test_df.IID[test_df['window'] == 0].values)
+        X_test_reshaped = X_test.to_numpy().reshape((int(X_test.shape[0]/window_count), window_count, X_test.shape[1]))
+
+        print("Reshaped testing features:")
+        print(X_test_reshaped.shape)
+    else:
+        X_test_reshaped = None
+        test_samples = None
 
     return X_train_reshaped, y_train, X_test_reshaped, train_samples, test_samples
-
 
 def train_binary_lstm(X_train_reshaped, y_train, out_path, verbosity=1, val_data=None):
     # Eventually add model that returns sequences & multiple probabilities for each CNV class
@@ -77,7 +83,7 @@ def train_binary_lstm(X_train_reshaped, y_train, out_path, verbosity=1, val_data
                                                                                        tf.keras.metrics.Recall()])
     
     # Fit model to reshaped training vectors - make verbose option/more customizable architecture later
-    binary_lstm_model.fit(X_train_reshaped, y_train, batch_size = 32, epochs=20, verbose=verbosity, validation_data = val_data) # default batch size = 32
+    history = binary_lstm_model.fit(X_train_reshaped, y_train, batch_size = 32, epochs=20, verbose=verbosity, validation_data = val_data) # default batch size = 32
     
     # pickle.dump(binary_lstm_model, open(f'{out_path}_{X_train_reshaped.shape[1]}_windows.sav', 'wb'))
     # joblib.dump(binary_lstm_model, f'{out_path}_{X_train_reshaped.shape[1]}_windows.sav')
@@ -85,6 +91,7 @@ def train_binary_lstm(X_train_reshaped, y_train, out_path, verbosity=1, val_data
     # Save model - keras.src module issue in swarm job
     binary_lstm_model.save(f'{out_path}_{X_train_reshaped.shape[1]}_windows.keras')
 
+    return history
 
 def model_predict(model_file, X_test_reshaped, test_samples, out_path, summary = True):
     # Load in model - keras.src module issue in swarm job

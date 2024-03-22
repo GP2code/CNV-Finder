@@ -17,6 +17,7 @@ from sklearn.preprocessing import MinMaxScaler
 # Supress copy warning.
 pd.options.mode.chained_assignment = None
 
+
 # create chromosome interval here
 def check_interval(interval_name, interval_file = 'ref_files/glist_hg38_intervals.csv'):
     # can catch for other common NDD genes
@@ -79,7 +80,7 @@ def dosage_within_gene(row, col_name, df):
 def create_train_set():
     # create file if doesn't exist, or append to existing file so you can add pos/neg cases
     # can potentially supply path to folder with all hand-checked samples
-    # will accept output from app
+    # will accept output from app with option to make gene-specific training test
     pass
 
 def create_test_set(master_key, num_samples, training_file, snp_metrics_path, out_path, study_name = 'all'):
@@ -150,84 +151,71 @@ def make_window_df(chr, start, stop, split_interval, window_count, buffer):
     # Final dataframe with windows
     window_df = pd.DataFrame({'START':start, 'STOP': stop})
 
-    # Dataframe that will hold all samples' windows_df
-    all_samples = pd.DataFrame(columns=['START', 'STOP', 'dosage_interval', 'dosage_gene', 'std_baf', 'std_lrr', 'iqr_baf', 'iqr_lrr', 'CHR', 'IID'])
+    return window_df
 
-    return window_df, all_samples
+def fill_window_df(sample_data):
+    sample, out_path, snp_metrics_file, window_df, chr, start, stop, buffer, test_set, min_gentrain, bim_file, pvar_file = sample_data
+    metrics_df = pd.read_parquet(snp_metrics_file)
 
-def fill_window_df(data_file, chr, start, stop, out_path, split_interval = 5, total_window_count = 31, buffer=250000, test_set = True, min_gentrain=0.2, bim_file = None, pvar_file = None):
-    samples_list = pd.read_csv(data_file)
+    # may need to run one ancestry label at a time depending on how bim is organized 
+    if bim_file or pvar_file:
+        if os.path.isfile(bim_file):
+            bim = pd.read_csv(bim_file, sep='\s+', header=None, names=['chr','id','pos','bp','a1','a2'], usecols=['id'])
+            sample_df = metrics_df.loc[(metrics_df.snpID.isin(bim.id)) & (metrics_df.GenTrain_Score>=min_gentrain)]
+        elif os.path.isfile(pvar_file):
+            pvar = pd.read_csv(pvar_file, sep='\s+', header=None, names=['#CHROM','POS','ID','REF','ALT'], usecols=['ID'])
+            sample_df = metrics_df.loc[(metrics_df.snpID.isin(pvar.ID)) & (metrics_df.GenTrain_Score>=min_gentrain)]
+    else:
+        sample_df = metrics_df.loc[(metrics_df.GenTrain_Score>=min_gentrain)]
 
-    # get clean dataframe to fill
-    window_df, all_samples = make_window_df(chr, start, stop, split_interval, total_window_count, buffer)
+    sample_df_interval = sample_df[['snpID', 'chromosome', 'position', 'BAlleleFreq', 'LogRRatio']][(sample_df['chromosome'] == chr) 
+                    & (sample_df['position'] >= (start-buffer)) 
+                    & (sample_df['position'] <= (stop+buffer))]
     
-    for i in range(len(samples_list)):
-        sample = samples_list.IID.iloc[i]
-        code = sample.split('_')[0]
-        snp_metrics_file = samples_list.snp_metrics_path.iloc[i]
-        metrics_df = pd.read_parquet(snp_metrics_file)
-
-        # may need to run one ancestry label at a time depending on how bim is organized 
-        if bim_file or pvar_file:
-            if os.path.isfile(bim_file):
-                bim = pd.read_csv(bim_file, sep='\s+', header=None, names=['chr','id','pos','bp','a1','a2'], usecols=['id'])
-                sample_df = metrics_df.loc[(metrics_df.snpID.isin(bim.id)) & (metrics_df.GenTrain_Score>=min_gentrain)]
-            elif os.path.isfile(pvar_file):
-                pvar = pd.read_csv(pvar_file, sep='\s+', header=None, names=['#CHROM','POS','ID','REF','ALT'], usecols=['ID'])
-                sample_df = metrics_df.loc[(metrics_df.snpID.isin(pvar.ID)) & (metrics_df.GenTrain_Score>=min_gentrain)]
-        else:
-            sample_df = metrics_df.loc[(metrics_df.GenTrain_Score>=min_gentrain)]
+    # find predicted CNV type
+    sample_df_interval['BAF_insertion'] = np.where((sample_df_interval['BAlleleFreq'].between(0.65, 0.85, inclusive='neither')) | (sample_df_interval['BAlleleFreq'].between(0.15, 0.35, inclusive='neither')), 1, 0)
+    sample_df_interval['L2R_deletion'] = np.where(sample_df_interval['LogRRatio'] < -0.2, 1, 0)
+    sample_df_interval['L2R_duplication'] = np.where(sample_df_interval['LogRRatio'] > 0.2, 1, 0)
     
-        sample_df_interval = sample_df[['snpID', 'chromosome', 'position', 'BAlleleFreq', 'LogRRatio']][(sample_df['chromosome'] == chr) 
-                        & (sample_df['position'] >= (start-buffer)) 
-                        & (sample_df['position'] <= (stop+buffer))]
+    sample_df_interval['ALT_pred'] = np.where(sample_df_interval['BAF_insertion'] == 1, '<INS>', 
+                                    np.where(sample_df_interval['L2R_deletion'] == 1, '<DEL>', 
+                                    np.where(sample_df_interval['L2R_duplication'] == 1, '<DUP>', '')))
+    sample_df_interval['CNV_call'] = np.where(sample_df_interval['ALT_pred'] == '', 0, 
+                                    np.where(sample_df_interval['ALT_pred'] != '', 1, ''))
+
+    # only where variants fall into CNV ranges
+    pred_cnv = sample_df_interval[sample_df_interval['CNV_call'] == '1']
+
+    # gather features for ML model
+    sample_df_interval = sample_df_interval.astype({'BAlleleFreq':'float', 'LogRRatio':'float', 'CNV_call':'int'})
+    pred_cnv = pred_cnv.astype({'BAlleleFreq':'float', 'LogRRatio':'float', 'CNV_call':'int'})
+    window_df['dosage_interval'] = window_df.apply(lambda row: mean_within_interval(row, 'CNV_call', sample_df_interval), axis=1)
+    window_df['dosage_gene'] = window_df.apply(lambda row: dosage_within_gene(row, 'CNV_call', pred_cnv), axis=1)
+
+    window_df['del_dosage'] = window_df.apply(lambda row: dosage_within_gene(row, 'L2R_deletion', pred_cnv), axis=1)
+    window_df['dup_dosage'] = window_df.apply(lambda row: dosage_within_gene(row, 'L2R_duplication', pred_cnv), axis=1)
+    window_df['ins_dosage'] = window_df.apply(lambda row: dosage_within_gene(row, 'BAF_insertion', pred_cnv), axis=1)
+
+    window_df['avg_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+    window_df['avg_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
+    
+    window_df['std_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+    window_df['std_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
         
-        # find predicted CNV type
-        sample_df_interval['BAF_insertion'] = np.where((sample_df_interval['BAlleleFreq'].between(0.65, 0.85, inclusive='neither')) | (sample_df_interval['BAlleleFreq'].between(0.15, 0.35, inclusive='neither')), 1, 0)
-        sample_df_interval['L2R_deletion'] = np.where(sample_df_interval['LogRRatio'] < -0.2, 1, 0)
-        sample_df_interval['L2R_duplication'] = np.where(sample_df_interval['LogRRatio'] > 0.2, 1, 0)
-        
-        sample_df_interval['ALT_pred'] = np.where(sample_df_interval['BAF_insertion'] == 1, '<INS>', 
-                                        np.where(sample_df_interval['L2R_deletion'] == 1, '<DEL>', 
-                                        np.where(sample_df_interval['L2R_duplication'] == 1, '<DUP>', '')))
-        sample_df_interval['CNV_call'] = np.where(sample_df_interval['ALT_pred'] == '', 0, 
-                                        np.where(sample_df_interval['ALT_pred'] != '', 1, ''))
-
-        # only where variants fall into CNV ranges
-        pred_cnv = sample_df_interval[sample_df_interval['CNV_call'] == '1']
-
-        # gather features for ML model
-        sample_df_interval = sample_df_interval.astype({'BAlleleFreq':'float', 'LogRRatio':'float', 'CNV_call':'int'})
-        pred_cnv = pred_cnv.astype({'BAlleleFreq':'float', 'LogRRatio':'float', 'CNV_call':'int'})
-        window_df['dosage_interval'] = window_df.apply(lambda row: mean_within_interval(row, 'CNV_call', sample_df_interval), axis=1)
-        window_df['dosage_gene'] = window_df.apply(lambda row: dosage_within_gene(row, 'CNV_call', pred_cnv), axis=1)
+    window_df['iqr_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+    window_df['iqr_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
     
-        # save for each type when working with all CNV types
-        window_df['del_dosage'] = window_df.apply(lambda row: dosage_within_gene(row, 'L2R_deletion', pred_cnv), axis=1)
-    
-        window_df['avg_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
-        window_df['avg_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
-        
-        window_df['std_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
-        window_df['std_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
-            
-        window_df['iqr_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
-        window_df['iqr_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
-        
-        window_df['cnv_range_count'] = len(pred_cnv)
-        window_df['IID'] = sample
-        window_df['CHR'] = chr
-    
-        if not test_set:
-            window_df['CNV_exists'] = 0  # figure out with create train set
-    
-        # restarts index with every new sample - will want index = True when saving to csv for window count
-        window_df.fillna(0, inplace = True)
-        all_samples = pd.concat([all_samples, window_df])
+    window_df['cnv_range_count'] = len(pred_cnv)
+    window_df['IID'] = sample
+    window_df['CHR'] = chr
 
-        # figure out a way to parallelize?
+    if not test_set:
+        window_df['CNV_exists'] = 0  # figure out with create train set
 
-    all_samples.to_csv(f'{out_path}_samples_windows.csv')
+    # restarts index with every new sample - will want index = True when saving to csv for window count
+    window_df.fillna(0, inplace = True)
+
+    window_df.to_csv(f'{out_path}_samples_windows.csv', mode='a', header=False)
 
 def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out_path, prob_threshold = 0.8):
     test_df = pd.read_csv(test_set_path)
@@ -249,13 +237,10 @@ def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out
 
     return above_probab
 
-# def generate_pred_cnvs(above_probab_path, chr, start, stop, out_path, buffer = 250000, bim_file = None, pvar_file = None):
-def generate_pred_cnvs(metrics, chr, start, stop, out_path, buffer = 250000, min_gentrain= 0.2, bim_file = None, pvar_file = None):
+def generate_pred_cnvs(sample_data): 
+    metrics, chr, start, stop, out_path, buffer, min_gentrain, bim_file, pvar_file = sample_data
     out_dir = os.path.dirname(os.path.abspath(out_path))
-    # samples = pd.read_csv(above_probab_path)
 
-    # if parrallelize, remove for loop
-    # for metrics in samples.snp_metrics_path:
     sample = metrics.split('/')[-1].split('=')[-1]
         
     metrics_df = pd.read_parquet(metrics)
@@ -286,13 +271,11 @@ def generate_pred_cnvs(metrics, chr, start, stop, out_path, buffer = 250000, min
                                     np.where(sample_df_interval['ALT_pred'] != '', 1, ''))
 
     # more simplistic path relies on organized out_path selection
-    # pred_path = f'{out_dir}/pred_cnvs/{chr}_{start-buffer}_{stop+buffer}'
     pred_path = f'{out_dir}/pred_cnvs'
     os.makedirs(pred_path, exist_ok=True)
     sample_df_interval.to_csv(f'{pred_path}/{sample}_full_interval.csv', index = False)
         
-        
-def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', title='snp plot', opacity = 1, cnvs = None, xmin= None, xmax = None):
+def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', title='snp plot', opacity = 1, midline = False, cnvs = None, xmin= None, xmax = None):
     d3 = px.colors.qualitative.D3
 
     cmap = {
@@ -331,7 +314,20 @@ def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', ti
         fig.update_traces(opacity = opacity)
         fig.add_traces(px.scatter(cnvs, x=x_col, y=y_col, hover_data=[gtype_col]).update_traces(marker_color="black").data)
     else:
-        fig = px.scatter(df, x=x_col, y=y_col, color=gtype_col, color_discrete_map=cmap_choice, width=650, height=497, labels=lmap, symbol_map=smap)
+        if gtype_col == None:
+            fig = px.scatter(df, x=x_col, y=y_col, color=gtype_col, color_discrete_sequence=['grey'], width=650, height=497, labels=lmap, symbol_map=smap, opacity=opacity)
+        else:
+            fig = px.scatter(df, x=x_col, y=y_col, color=gtype_col, color_discrete_map=cmap_choice, width=650, height=497, labels=lmap, symbol_map=smap, opacity=opacity)
+
+    if midline:
+        # Calculate the average y-value for each unique x-value
+        unique_x = np.linspace(min(df[x_col]), max(df[x_col]), num=50)
+
+        # Use cut to create bins and calculate average y within each bin
+        df['x_bin'] = pd.cut(df[x_col], bins=unique_x)
+        grouped_df = df[[x_col, 'x_bin', y_col]].groupby('x_bin').mean().reset_index()
+
+        fig.add_traces(px.line(grouped_df, x=x_col, y=y_col).update_traces(line=dict(color='red', width=3), name='Average Line').data)
 
     fig.update_xaxes(range=xlim, nticks=10, zeroline=False)
     fig.update_yaxes(range=ylim, nticks=10, zeroline=False)
@@ -351,4 +347,3 @@ def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', ti
     fig.update_layout(title_text=f'<b>{title}<b>')
     
     return fig
-
