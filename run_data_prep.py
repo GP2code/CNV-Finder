@@ -8,7 +8,8 @@ import multiprocessing
 def main():
     parser = argparse.ArgumentParser(description='Arguments for Running CNV-Finder ML Data Prep.')    
     parser.add_argument('--interval_name', type=str, default=None, help='Name for NDD-related Gene region.')
-    parser.add_argument('--interval_file', type=str, default='ref_files/glist_hg38_intervals.csv', help='Gene or other feature intervals to analyze. Header is [NAME,CHR,START,STOP], one line per interval. Autosomes only.')
+    parser.add_argument('--interval_file', type=str, default='ref_files/glist_hg38_intervals.csv', help='Gene or other \
+                        feature intervals to analyze. Header is [NAME,CHR,START,STOP], one line per interval. Autosomes only.')
     parser.add_argument('--chr', type=str, default=None, help='Chromsome for region of interest.')
     parser.add_argument('--start', type=int, default=None, help='Starting position in base pairs (hg38).')
     parser.add_argument('--stop', type=int, default=None, help='Stopping position in base pairs (hg38).')
@@ -18,13 +19,17 @@ def main():
     parser.add_argument('--total_windows', type=int, default=31, help='Count of windows in region per sample (with overlap).')
     parser.add_argument('--bim_file', type=str, default=None, help='PLINK .bim file following sample QC.')
     parser.add_argument('--pvar_file', type=str, default=None, help='PLINK2 .pvar file following sample QC.')
-    parser.add_argument('--master_file', type=str, default='ref_files/master_key.txt', help='Master key for all available samples in data release (need IID and binary GDPR (0-no, 1-yes) column).')
+    parser.add_argument('--master_file', type=str, default='ref_files/master_key.txt', help='Master key for all available samples in data \
+                        release (need IID and binary GDPR (0-no, 1-yes) column).')
     parser.add_argument('--study_name', type=str, default='all', help='Subset or cohort of interest from larger data release.')
-    parser.add_argument('--metrics_path', type=str, default='ref_files/snp_metrics', help='Path to SNP metrics files/parquets with the format {metrics_path}/{sentrixbarcode}/snp_metrics_{sentrixbarcode}/Sample_ID={sample}.')
+    parser.add_argument('--metrics_path', type=str, default='ref_files/snp_metrics', help='Path to SNP metrics files/parquets with the format \
+                         {metrics_path}/{sentrixbarcode}/snp_metrics_{sentrixbarcode}/Sample_ID={sample}.')
     parser.add_argument('--out_path', type=str, default=None, help='Path to output reports with suggested format {Cohort}_{Gene or Interval Name}.')
+    parser.add_argument('--cpus', type=int, default=8, help='Number of CPUs available for the job.')
 
     # need to figure out training set creation
-    parser.add_argument('--training_ids', type=str, default=None, help='List of IDs used in training set with headers IID. May also include the interval where CNV was found in each sample. Otherwise interval/chromosome with position range must be included in proper labels.')
+    parser.add_argument('--training_ids', type=str, default=None, help='List of IDs used in training set with headers IID. May also include the \
+                        interval where CNV was found in each sample. Otherwise interval/chromosome with position range must be included in proper labels.')
     parser.add_argument('--testing_ids', type=str, default=None, help='List of IDs used in testing set with header IID.')
     parser.add_argument('--create_training', action='store_true', help='Create new training set (functionality coming soon).')
     parser.add_argument('--train_size', type=int, default=100, help='Number of samples to include in training set.')
@@ -35,6 +40,7 @@ def main():
 
     interval_name = args.interval_name
     interval_file = args.interval_file
+    cpus = args.cpus
     chr = args.chr
     start_pos = args.start
     stop_pos = args.stop
@@ -72,29 +78,28 @@ def main():
             new_intervals.to_csv('ref_files/custom_intervals.csv', mode='a')
 
     if create_test:
-        test_set = True
+        cnv_exists = np.nan
+        
         if not test_df:
             create_test_set(master_file, test_size, train_df, snp_metrics_path, out_path, study_name)
 
-            # non-parallelized
-            # fill_window_df(f'{out_path}_testing_IDs.csv', chr, start_pos, stop_pos, out_path, split_interval, total_windows, buffer, test_set, min_gentrain, bim, pvar)
-            
             # Read in testing IDs
             test_df = pd.read_csv(f'{out_path}_testing_IDs.csv')
 
         # Create df to hold windows that span interval of interest
         window_df = make_window_df(chr, start_pos, stop_pos, split_interval, total_windows, buffer)
-        all_samples = pd.DataFrame(columns=['START', 'STOP', 'dosage_interval', 'dosage_gene', 'del_dosage', 'dup_dosage', 'ins_dosage', 'avg_baf', 'avg_lrr', 'std_baf', 'std_lrr', 'iqr_baf', 'iqr_lrr', 'cnv_range_count', 'IID',  'CHR'])
-        all_samples.to_csv(f'{out_path}_samples_windows.csv')
+        
         # Parallelize creation of df that holds all samples with aggregated feature in each window
-        with multiprocessing.Pool() as pool:
-            pool.map(fill_window_df, [(row.IID, out_path, row.snp_metrics_path, window_df, chr, start_pos, stop_pos, buffer, test_set, min_gentrain, bim, pvar) for index, row in test_df.iterrows()])
+        with multiprocessing.Pool(cpus) as pool:
+            results = pool.map(fill_window_df, [(row.IID, row.snp_metrics_path, window_df, cnv_exists, chr, start_pos, stop_pos, buffer, min_gentrain, bim, pvar) for index, row in test_df.iterrows()])
+
+        all_samples = pd.concat(results)
+        all_samples.to_csv(f'{out_path}_samples_windows.csv', index = False)
+        
 
     if create_train:
-        test_set = False
         train_df = pd.read_csv(train_df)
 
-        # change into single interval vs multi-interval
         for sample in train_df.IID:
             code = sample.split('_')[0]
             train_df['snp_metrics_path'] = f'{snp_metrics_path}/{code}/snp_metrics_{code}/Sample_ID={sample}'
@@ -126,7 +131,10 @@ def main():
             window_df = make_window_df(chr, start_pos, stop_pos, split_interval, total_windows, buffer)
             # Parallelize creation of df that holds all samples with aggregated feature in each window
             with multiprocessing.Pool() as pool:
-                pool.map(fill_window_df, [(row.IID, out_path, row.snp_metrics_path, window_df, chr, start_pos, stop_pos, buffer, test_set, min_gentrain, bim, pvar) for index, row in train_df.iterrows()])
+                results = pool.map(fill_window_df, [(row.IID, row.snp_metrics_path, window_df, row.CNV_exists, chr, start_pos, stop_pos, buffer, min_gentrain, bim, pvar) for index, row in train_df.iterrows()])
+
+            all_samples = pd.concat(results)
+            all_samples.to_csv(f'{out_path}_samples_windows.csv', index = False)
         
 
 if __name__ == "__main__":

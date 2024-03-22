@@ -21,12 +21,14 @@ def main():
     parser.add_argument('--test_set_results', type=str, default=None, help='Path to file with model results on test set.')
     parser.add_argument('--probability', type=float, default=0.8, help='Probability threshold of model predictions that must be met to be included in app.')
     parser.add_argument('--out_path', type=str, default=None, help='Path to output app-ready report with suggested format Cohort_Gene or Interval Name.')
+    parser.add_argument('--cpus', type=int, default=8, help='Number of CPUs available for the job.')
     parser.add_argument('--make_app_ready', action='store_true', help='Create 1 app ready file including all testing samples with necessary info for app creation.')
 
     args = parser.parse_args()
 
     interval_name = args.interval_name
     interval_file = args.interval_file
+    cpus = args.cpus
     chr = args.chr
     start_pos = args.start
     stop_pos = args.stop
@@ -60,7 +62,7 @@ def main():
         # for metrics in above_probab.snp_metrics_path:
             # generate_pred_cnvs(metrics, chr, start_pos, stop_pos, out_path, buffer, min_gentrain, bim, pvar)
 
-        with multiprocessing.Pool() as pool:
+        with multiprocessing.Pool(cpus) as pool:
             pool.map(generate_pred_cnvs, [(above_probab.snp_metrics_path, chr, start_pos, stop_pos, out_path, buffer, min_gentrain, bim, pvar) for index, row in above_probab.iterrows()])
 
 if __name__ == "__main__":

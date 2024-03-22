@@ -24,7 +24,6 @@ pd.options.mode.chained_assignment = None
 # Eventually add CNN/other LSTM architectures
 def prep_ml_datasets(train_path, feature_names, test_path = None):
     train_df = pd.read_csv(train_path)
-    train_df.rename(columns = {'Unnamed: 0': 'window'}, inplace = True)
     
     window_count = len(train_df.window.value_counts())
     print("Windows: ", window_count)
@@ -49,7 +48,6 @@ def prep_ml_datasets(train_path, feature_names, test_path = None):
     
     if test_path:
         test_df = pd.read_csv(test_path)
-        test_df.rename(columns = {'Unnamed: 0': 'window'}, inplace = True)
         
         # No testing labels - will check accuracy with manual observation for high probabiilties
         print("Testing features:")
