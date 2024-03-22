@@ -30,7 +30,7 @@ def main():
     if len(feature_names) == 0:
         feature_names = ['dosage_interval', 'dosage_gene', 'del_dosage', 'std_baf', 'std_lrr', 'iqr_baf', 'iqr_lrr', 'avg_baf', 'avg_lrr']
         
-    X_train_reshaped, y_train, X_test_reshaped, train_samples, test_samples = prep_ml_datasets(train_file, test_file, feature_names)
+    X_train_reshaped, y_train, X_test_reshaped, train_samples, test_samples = prep_ml_datasets(feature_names, train_file, test_file)
 
     if train_model:
         history = train_binary_lstm(X_train_reshaped, y_train, out_path)
