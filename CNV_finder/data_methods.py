@@ -154,7 +154,7 @@ def make_window_df(chr, start, stop, split_interval, window_count, buffer):
     return window_df
 
 def fill_window_df(sample_data):
-    sample, snp_metrics_file, window_df, cnv_exists, chr, start, stop, buffer, min_gentrain, bim_file, pvar_file = sample_data
+    out_path, sample, snp_metrics_file, window_df, cnv_exists, chr, start, stop, buffer, min_gentrain, bim_file, pvar_file = sample_data
     metrics_df = pd.read_parquet(snp_metrics_file)
 
     # may need to run one ancestry label at a time depending on how bim is organized 
@@ -213,7 +213,7 @@ def fill_window_df(sample_data):
     window_df['window'] = window_df.index
     window_df['CNV_exists'] = cnv_exists
     
-    return window_df
+    window_df.to_csv(f'{out_path}_samples_windows.csv', mode = 'a', header = None, index = False)
 
 def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out_path, prob_threshold = 0.8):
     test_df = pd.read_csv(test_set_path)
