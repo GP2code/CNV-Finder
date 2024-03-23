@@ -89,9 +89,9 @@ def main():
         # Create df to hold windows that span interval of interest
         window_df = make_window_df(chr, start_pos, stop_pos, split_interval, total_windows, buffer)
         all_samples = pd.DataFrame(columns = ['START', 'STOP', 'dosage_interval', 'dosage_gene', 'del_dosage', 'dup_dosage', 'ins_dosage', 'avg_baf', 'avg_lrr', \
-                                             'std_baf', 'std_lrr', 'iqr_baf', 'iqr_lrr', 'cnv_range_count', 'IID', 'CHR', 'window', 'CNV_exists'])
+                                            'std_baf', 'std_lrr', 'iqr_baf', 'iqr_lrr', 'cnv_range_count', 'IID', 'CHR', 'window', 'CNV_exists'])
         all_samples.to_csv(f'{out_path}_samples_windows.csv', index = False)
-
+        
         # Parallelize creation of df that holds all samples with aggregated feature in each window
         with multiprocessing.Pool(cpus) as pool:
             pool.map(fill_window_df, [(out_path, row.IID, row.snp_metrics_path, window_df, cnv_exists, chr, start_pos, stop_pos, buffer, min_gentrain, bim, pvar) for index, row in test_df.iterrows()])
@@ -129,14 +129,13 @@ def main():
                 
             # Create df to hold windows that span interval of interest
             window_df = make_window_df(chr, start_pos, stop_pos, split_interval, total_windows, buffer)
-        window_df = make_window_df(chr, start_pos, stop_pos, split_interval, total_windows, buffer)
-        all_samples = pd.DataFrame(columns = ['START', 'STOP', 'dosage_interval', 'dosage_gene', 'del_dosage', 'dup_dosage', 'ins_dosage', 'avg_baf', 'avg_lrr', \
-                                             'std_baf', 'std_lrr', 'iqr_baf', 'iqr_lrr', 'cnv_range_count', 'IID', 'CHR', 'window', 'CNV_exists'])
-        all_samples.to_csv(f'{out_path}_samples_windows.csv', index = False)
-
-        # Parallelize creation of df that holds all samples with aggregated feature in each window
-        with multiprocessing.Pool(cpus) as pool:
-            pool.map(fill_window_df, [(out_path, row.IID, row.snp_metrics_path, window_df, cnv_exists, chr, start_pos, stop_pos, buffer, min_gentrain, bim, pvar) for index, row in train_df.iterrows()])
+            all_samples = pd.DataFrame(columns = ['START', 'STOP', 'dosage_interval', 'dosage_gene', 'del_dosage', 'dup_dosage', 'ins_dosage', 'avg_baf', 'avg_lrr', \
+                                                 'std_baf', 'std_lrr', 'iqr_baf', 'iqr_lrr', 'cnv_range_count', 'IID','CHR', 'window', 'CNV_exists'])
+            all_samples.to_csv(f'{out_path}_samples_windows.csv', index = False)
+            
+            # Parallelize creation of df that holds all samples with aggregated feature in each window
+            with multiprocessing.Pool(cpus) as pool:
+                pool.map(fill_window_df, [(out_path, row.IID, row.snp_metrics_path, window_df, cnv_exists, chr, start_pos, stop_pos, buffer, min_gentrain, bim, pvar) for index, row in train_df.iterrows()])
         
 
 if __name__ == "__main__":
