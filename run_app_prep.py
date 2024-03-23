@@ -58,12 +58,8 @@ def main():
     if app_ready:
         above_probab = create_app_ready_file(test_set_ids, test_set_windows, test_set_results, out_path, probability)
 
-        # non-parallelized method
-        # for metrics in above_probab.snp_metrics_path:
-            # generate_pred_cnvs(metrics, chr, start_pos, stop_pos, out_path, buffer, min_gentrain, bim, pvar)
-
         with multiprocessing.Pool(cpus) as pool:
-            pool.map(generate_pred_cnvs, [(above_probab.snp_metrics_path, chr, start_pos, stop_pos, out_path, buffer, min_gentrain, bim, pvar) for index, row in above_probab.iterrows()])
+            pool.map(generate_pred_cnvs, [(row.IID, row.snp_metrics_path, chr, start_pos, stop_pos, out_path, buffer, min_gentrain, bim, pvar) for index, row in above_probab.iterrows()])
 
 if __name__ == "__main__":
     main()

@@ -235,7 +235,7 @@ def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out
     return above_probab
 
 def generate_pred_cnvs(sample_data): 
-    metrics, chr, start, stop, out_path, buffer, min_gentrain, bim_file, pvar_file = sample_data
+    sample, metrics, chr, start, stop, out_path, buffer, min_gentrain, bim_file, pvar_file = sample_data
     out_dir = os.path.dirname(os.path.abspath(out_path))
 
     sample = metrics.split('/')[-1].split('=')[-1]
