@@ -20,13 +20,26 @@ pd.options.mode.chained_assignment = None
 
 # create chromosome interval here
 def check_interval(interval_name, interval_file = 'ref_files/glist_hg38_intervals.csv'):
+    interval_dir = os.path.dirname(os.path.abspath(interval_file))
+    
     # can catch for other common NDD genes
     if interval_name == 'PRKN':
         interval_name = 'PARK2'
         
     interval_df = pd.read_csv(interval_file)
     positions = interval_df[interval_df.NAME == interval_name]
-    return positions
+    if len(positions) > 0:
+        # print(positions)
+        chrom = positions.CHR.values[0]
+        start_pos = positions.START.values[0]
+        stop_pos = positions.STOP.values[0]
+    else:
+        chrom, start_pos, stop_pos = None, None, None
+        print('Interval name not found in interval reference file. Added to custom reference file with base pair positions you provided.')
+        new_intervals = pd.DataFrame({'NAME': chr,'CHR': chr,'START': start_pos,'STOP': stop_pos})
+        new_intervals.to_csv(f'{interval_dir}/custom_intervals.csv', mode='a')
+        
+    return chrom, start_pos, stop_pos
 
 def find_interval(df, position):
     for start, stop in zip(df['POS'], df['POS_stop']):
@@ -66,7 +79,7 @@ def std_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (df['position'] <= row['STOP'])
     return df.loc[interval_mask, col_name].std()
 
-def dosage_within_gene(row, col_name, df):
+def dosage_full(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (df['position'] <= row['STOP'])
     calls = sum(df.loc[interval_mask, col_name])
 
@@ -154,7 +167,8 @@ def make_window_df(chr, start, stop, split_interval, window_count, buffer):
     return window_df
 
 def fill_window_df(sample_data):
-    out_path, sample, snp_metrics_file, window_df, cnv_exists, chr, start, stop, buffer, min_gentrain, bim_file, pvar_file = sample_data
+    out_path, sample, snp_metrics_file, split_interval, total_windows, cnv_exists, chr, start, stop, buffer, min_gentrain, bim_file, pvar_file = sample_data
+    window_df = make_window_df(chr, start, stop, split_interval, total_windows, buffer)
     metrics_df = pd.read_parquet(snp_metrics_file)
 
     # may need to run one ancestry label at a time depending on how bim is organized 
@@ -176,6 +190,7 @@ def fill_window_df(sample_data):
     sample_df_interval['BAF_insertion'] = np.where((sample_df_interval['BAlleleFreq'].between(0.65, 0.85, inclusive='neither')) | (sample_df_interval['BAlleleFreq'].between(0.15, 0.35, inclusive='neither')), 1, 0)
     sample_df_interval['L2R_deletion'] = np.where(sample_df_interval['LogRRatio'] < -0.2, 1, 0)
     sample_df_interval['L2R_duplication'] = np.where(sample_df_interval['LogRRatio'] > 0.2, 1, 0)
+    sample_df_interval['BAF_middle'] = np.where((sample_df_interval['BAlleleFreq'] >= 0.15) & (sample_df_interval['BAlleleFreq'] <= 0.85), 1, 0)
     
     sample_df_interval['ALT_pred'] = np.where(sample_df_interval['BAF_insertion'] == 1, '<INS>', 
                                     np.where(sample_df_interval['L2R_deletion'] == 1, '<DEL>', 
@@ -190,19 +205,26 @@ def fill_window_df(sample_data):
     sample_df_interval = sample_df_interval.astype({'BAlleleFreq':'float', 'LogRRatio':'float', 'CNV_call':'int'})
     pred_cnv = pred_cnv.astype({'BAlleleFreq':'float', 'LogRRatio':'float', 'CNV_call':'int'})
     window_df['dosage_interval'] = window_df.apply(lambda row: mean_within_interval(row, 'CNV_call', sample_df_interval), axis=1)
-    window_df['dosage_gene'] = window_df.apply(lambda row: dosage_within_gene(row, 'CNV_call', pred_cnv), axis=1)
+    window_df['dosage_full'] = window_df.apply(lambda row: dosage_full(row, 'CNV_call', pred_cnv), axis=1)
 
-    window_df['del_dosage'] = window_df.apply(lambda row: dosage_within_gene(row, 'L2R_deletion', pred_cnv), axis=1)
-    window_df['dup_dosage'] = window_df.apply(lambda row: dosage_within_gene(row, 'L2R_duplication', pred_cnv), axis=1)
-    window_df['ins_dosage'] = window_df.apply(lambda row: dosage_within_gene(row, 'BAF_insertion', pred_cnv), axis=1)
+    window_df['del_dosage_full'] = window_df.apply(lambda row: dosage_full(row, 'L2R_deletion', pred_cnv), axis=1)
+    window_df['dup_dosage_full'] = window_df.apply(lambda row: dosage_full(row, 'L2R_duplication', pred_cnv), axis=1)
+    window_df['ins_dosage_full'] = window_df.apply(lambda row: dosage_full(row, 'BAF_insertion', pred_cnv), axis=1)
+
+    window_df['del_dosage_interval'] = window_df.apply(lambda row: mean_within_interval(row, 'L2R_deletion', pred_cnv), axis=1)
+    window_df['dup_dosage_interval'] = window_df.apply(lambda row: mean_within_interval(row, 'L2R_duplication', pred_cnv), axis=1)
+    window_df['ins_dosage_interval'] = window_df.apply(lambda row: mean_within_interval(row, 'BAF_insertion', pred_cnv), axis=1)
 
     window_df['avg_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+    window_df['avg_mid_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', sample_df_interval[sample_df_interval['BAF_middle']==1]), axis=1)
     window_df['avg_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
     
     window_df['std_baf'] = window_df.apply(lambda row: std_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+    window_df['std_mid_baf'] = window_df.apply(lambda row: std_within_interval(row, 'BAlleleFreq', sample_df_interval[sample_df_interval['BAF_middle']==1]), axis=1)
     window_df['std_lrr'] = window_df.apply(lambda row: std_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
         
     window_df['iqr_baf'] = window_df.apply(lambda row: iqr_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+    window_df['iqr_mid_baf'] = window_df.apply(lambda row: iqr_within_interval(row, 'BAlleleFreq', sample_df_interval[sample_df_interval['BAF_middle']==1]), axis=1)
     window_df['iqr_lrr'] = window_df.apply(lambda row: iqr_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
     
     window_df['cnv_range_count'] = len(pred_cnv)
@@ -217,6 +239,10 @@ def fill_window_df(sample_data):
 
 def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out_path, prob_threshold = 0.8):
     test_df = pd.read_csv(test_set_path)
+
+    if 'Unnamed: 0' in test_df.columns:
+        test_df.rename(columns = {'Unnamed: 0': 'window'}, inplace = True)
+    
     test_df['abs_iqr_lrr'] = abs(test_df['iqr_lrr'])
     max_iqr = test_df.groupby('IID')['abs_iqr_lrr'].max()
 
