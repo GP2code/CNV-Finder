@@ -3,7 +3,6 @@ import os
 import shutil
 import numpy as np
 import glob
-import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.graph_objects as go
@@ -11,6 +10,7 @@ import plotly.express as px
 import importlib
 import plotly
 import random
+from scipy.stats import iqr
 from numpy.core.numeric import NaN
 from sklearn.preprocessing import MinMaxScaler
 
@@ -34,10 +34,6 @@ def find_interval(df, position):
             return f"{start}-{stop}"
     return None
 
-def mean_within_interval(row, col_name, df):
-    interval_mask = (df['position'] >= row['START']) & (df['position'] <= row['STOP'])
-    return df.loc[interval_mask, col_name].mean()
-
 def create_overlapping_windows(data, window_size, num_intervals):
     # Finds necessary overlap to reach the end of the data w/ specified # windows
     total_data_points = len(data)
@@ -58,13 +54,17 @@ def create_overlapping_windows(data, window_size, num_intervals):
 
     return start, stop
 
+def mean_within_interval(row, col_name, df):
+    interval_mask = (df['position'] >= row['START']) & (df['position'] <= row['STOP'])
+    return df.loc[interval_mask, col_name].mean()
+
 def iqr_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (df['position'] <= row['STOP'])
-    return stats.iqr(df.loc[interval_mask, col_name], interpolation = 'midpoint')
+    return iqr(df.loc[interval_mask, col_name], interpolation = 'midpoint')
 
 def std_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (df['position'] <= row['STOP'])
-    return df.loc[interval_mask, col_name].stdev()
+    return df.loc[interval_mask, col_name].std()
 
 def dosage_within_gene(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (df['position'] <= row['STOP'])
