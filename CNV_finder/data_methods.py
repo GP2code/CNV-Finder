@@ -199,11 +199,11 @@ def fill_window_df(sample_data):
     window_df['avg_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
     window_df['avg_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
     
-    window_df['std_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
-    window_df['std_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
+    window_df['std_baf'] = window_df.apply(lambda row: std_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+    window_df['std_lrr'] = window_df.apply(lambda row: std_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
         
-    window_df['iqr_baf'] = window_df.apply(lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
-    window_df['iqr_lrr'] = window_df.apply(lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
+    window_df['iqr_baf'] = window_df.apply(lambda row: iqr_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+    window_df['iqr_lrr'] = window_df.apply(lambda row: iqr_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
     
     window_df['cnv_range_count'] = len(pred_cnv)
     window_df['IID'] = sample

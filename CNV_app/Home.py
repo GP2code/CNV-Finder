@@ -138,8 +138,8 @@ else:
         # potentially use standard deviations here
         min_cnv_count = min(model_results['cnv_range_count'])
         max_cnv_count = max(model_results['cnv_range_count'])
-        lower_range = np.linspace(min_cnv_count, max_cnv_count - (0.5 * max_cnv_count), num=50)
-        upper_range = np.linspace(max_cnv_count- (0.5 * max_cnv_count), max_cnv_count, num=50)
+        lower_range = np.linspace(min_cnv_count, max_cnv_count - (0.5 * max_cnv_count), num=50, dtype=int)
+        upper_range = np.linspace(max_cnv_count- (0.5 * max_cnv_count), max_cnv_count, num=50, dtype=int)
         selected_value_lower = min(lower_range)
         selected_value_higher = max(upper_range)
 
@@ -152,9 +152,9 @@ else:
         upper_range_threshold = st.select_slider('Maximum threshold for CNV count :', options=upper_range, value = selected_value_higher)
 
         exp1, exp2, exp3 = st.columns([1.5,1,1])
-        threshold_submit  = exp2.checkbox('Plot With Thresholds')
+        st.session_state['threshold_submit']  = exp2.checkbox('Plot With Thresholds')
 
-    if threshold_submit:
+    if st.session_state['threshold_submit'] :
         # may need to add 'submit' button bc of delay with generating IIDs with these metrics
         threshold_results = model_results[(model_results['abs_iqr_lrr'] <= iqr_threshold) & (model_results['cnv_range_count'] >= lower_range_threshold) & 
                                         (model_results['cnv_range_count'] <= upper_range_threshold) & (model_results['Pred Values'] >= confidence)]
@@ -200,6 +200,10 @@ else:
     col2.markdown(f'Prediction probability of {str(round(model_results.loc[model_results.IID == st.session_state["sample_name"], "Pred Values"].iloc[0], 2))}')
 
     if len(st.session_state[samples_seen]) == 0:
+        st.session_state[samples_seen].append(st.session_state['sample_name'])
+
+    ## create on_change function for checkbox
+    if len(st.session_state[samples_seen]) == 1 and st.session_state['threshold_submit']:
         st.session_state[samples_seen].append(st.session_state['sample_name'])
 
     if not st.session_state['no_plot']:
