@@ -29,7 +29,7 @@ def main():
     interval_name = args.interval_name
     interval_file = args.interval_file
     cpus = args.cpus
-    chr = args.chr
+    chrom = args.chr
     start_pos = args.start
     stop_pos = args.stop
     buffer = args.buffer
@@ -46,20 +46,15 @@ def main():
     # if submitted interval in interval file, find positions
     # if empty dataframe, request new name/manual chr/positions
     if interval_name:
-        positions = check_interval(interval_name, interval_file)
-        if len(positions) > 0:
-            print(positions)
-            chr = positions.CHR.values[0]
-            start_pos = positions.START.values[0]
-            stop_pos = positions.STOP.values[0]
-        else:
+        chrom, start_pos, stop_pos = check_interval(interval_name, interval_file)
+        if not chrom or not start_pos or not stop_pos:
             print('Interval name not found in interval reference file. Please enter a new interval name or manually enter chromosome with start and stop base pair positions for interval of interest.')
 
     if app_ready:
         above_probab = create_app_ready_file(test_set_ids, test_set_windows, test_set_results, out_path, probability)
 
         with multiprocessing.Pool(cpus) as pool:
-            pool.map(generate_pred_cnvs, [(row.IID, row.snp_metrics_path, chr, start_pos, stop_pos, out_path, buffer, min_gentrain, bim, pvar) for index, row in above_probab.iterrows()])
+            pool.map(generate_pred_cnvs, [(row.IID, row.snp_metrics_path, chrom, start_pos, stop_pos, out_path, buffer, min_gentrain, bim, pvar) for index, row in above_probab.iterrows()])
 
 if __name__ == "__main__":
     main()
