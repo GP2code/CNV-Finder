@@ -68,10 +68,10 @@ def plot_sample():
 ### Create sidebar options
 # will expand on model selection - need to distinguish test results based on model version
 st.sidebar.markdown('### Choose a Model')
-models = ['Preliminary Deletion Model', 'Preliminary Duplication Model', 'Updated Deletion Model']
+models = ['Preliminary Deletion Model', 'Preliminary Duplication Model', 'Updated Deletion Model', 'Updated Duplication Model']
 model_name = st.sidebar.selectbox(label = 'Model Selection', label_visibility = 'collapsed', options=models)
 models_dict = {'Preliminary Deletion Model': 'del_prelim_model', 'Preliminary Duplication Model': 'dup_prelim_model',
-                'Updated Deletion Model': 'del_updated_model'}
+                'Updated Deletion Model': 'del_updated_model', 'Updated Duplication Model': 'dup_updated_model'}
 
 # split GP2 by cohort but also provide full release option
 st.sidebar.markdown('### Choose a GP2 Cohort')
@@ -83,7 +83,7 @@ st.sidebar.markdown('### Choose an NDD-Related Gene')
 
 # Mix of disease-related genes
 # Main focus for benchmarking
-genes = ['PARK2', 'MAPT', '22q_small', 'LINGO2']
+genes = ['PARK2', 'LINGO2', 'MAPT', 'SNCA']
 
 # Complete list of explored genes
 # genes = ['PARK2', 'APP', 'LINGO2', 'SNCA', 'CHRNA7', 'CYFIP1', 'CPNE4', 'TPCN1', 'PSEN1', 'CREB1', 'LRRK2', 'GBA', 'MAPT', 'ABI3', 'ABCA7', '22q_small', '22q',
@@ -125,10 +125,11 @@ else:
     model_results = pd.read_csv(model_path)
 
     with st.expander("Filter Displayed Samples"):
-        if st.session_state["model_choice"] == 'dup_prelim_model':
-            probab_options = [0.6, 0.7, 0.8, 0.9, 1]
-        else:
-            probab_options = [0.8, 0.9, 1]
+        # if st.session_state["model_choice"] == 'dup_prelim_model':
+        #     probab_options = [0.6, 0.7, 0.8, 0.9, 1]
+        # else:
+        #     probab_options = [0.8, 0.9, 1]
+        probab_options = [0.6, 0.7, 0.8, 0.9, 1]
         confidence = st.select_slider('Display samples with prediction probability of at least:', options=probab_options, value = 1)
 
         # adjust these thresholds 
@@ -210,6 +211,8 @@ else:
         yes = btn1.button('Yes', use_container_width = True)
         maybe = btn2.button('Maybe', use_container_width = True)
         no_btn = btn3.button('No', use_container_width = True)
+
+        # eventually make it so that this button prompts multiple choice/text entry for custom annotation
         other_cnv = btn4.button('Other CNV', use_container_width = True)
         plot_sample()
     else:
