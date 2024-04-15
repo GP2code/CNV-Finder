@@ -111,10 +111,10 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
 
     train_df = pd.read_csv(training_file)
     train_df.columns = map(str.lower, train_df.columns)
-    
+
     if "interval" in train_df.columns:
         train_interval = train_df[train_df.interval==interval_name]
-        open_ids = full_samples_list[~full_samples_list.IID.isin(train_interval.IID)]
+        open_ids = full_samples_list[~full_samples_list.IID.isin(train_interval.iid)]
     else:
         open_ids = full_samples_list[~full_samples_list.IID.isin(train_df.IID)]
     k = min(len(open_ids), num_samples)
