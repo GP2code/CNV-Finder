@@ -72,7 +72,7 @@ def main():
         cnv_exists = np.nan
         
         if not test_df:
-            create_test_set(master_file, test_size, train_df, snp_metrics_path, out_path, study_name)
+            create_test_set(master_file, test_size, train_df, snp_metrics_path, out_path, study_name, interval_name=interval_name)
 
             # Read in testing IDs
             test_df = pd.read_csv(f'{out_path}_testing_IDs.csv')

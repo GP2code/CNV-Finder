@@ -96,7 +96,7 @@ def create_train_set():
     # will accept output from app with option to make gene-specific training test
     pass
 
-def create_test_set(master_key, num_samples, training_file, snp_metrics_path, out_path, study_name = 'all'):
+def create_test_set(master_key, num_samples, training_file, snp_metrics_path, out_path, study_name = 'all', interval_name=None):
     # need master key, study name or GP2_all for whole GP2, need path to training set so no overlap with test set 
     # can later change so that it only doesn't repeat IIDs for the specific gene of interest
     if master_key.endswith('.txt'):
@@ -110,8 +110,13 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
         full_samples_list = full_samples_list[full_samples_list.study == study_name]
 
     train_df = pd.read_csv(training_file)
+    train_df.columns = map(str.lower, train_df.columns)
     
-    open_ids = full_samples_list[~full_samples_list.IID.isin(train_df.IID)]
+    if "interval" in train_df.columns:
+        train_interval = train_df[train_df.interval==interval_name]
+        open_ids = full_samples_list[~full_samples_list.IID.isin(train_interval.IID)]
+    else:
+        open_ids = full_samples_list[~full_samples_list.IID.isin(train_df.IID)]
     k = min(len(open_ids), num_samples)
     test_filenames = random.sample(set(open_ids.IID), k=k)
 

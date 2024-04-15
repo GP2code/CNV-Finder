@@ -68,10 +68,12 @@ def plot_sample():
 ### Create sidebar options
 # will expand on model selection - need to distinguish test results based on model version
 st.sidebar.markdown('### Choose a Model')
-models = ['Preliminary Deletion Model', 'Preliminary Duplication Model', 'Updated Deletion Model', 'Updated Duplication Model']
+models = ['Preliminary Deletion Model', 'Preliminary Duplication Model', 'Updated Deletion Model', 'Updated Duplication Model',
+        'Final Deletion Model', 'Final Duplication Model']
 model_name = st.sidebar.selectbox(label = 'Model Selection', label_visibility = 'collapsed', options=models)
 models_dict = {'Preliminary Deletion Model': 'del_prelim_model', 'Preliminary Duplication Model': 'dup_prelim_model',
-                'Updated Deletion Model': 'del_updated_model', 'Updated Duplication Model': 'dup_updated_model'}
+                'Updated Deletion Model': 'del_updated_model', 'Updated Duplication Model': 'dup_updated_model',
+                'Final Deletion Model': 'del_final_model', 'Final Duplication Model': 'dup_final_model'}
 
 # split GP2 by cohort but also provide full release option
 st.sidebar.markdown('### Choose a GP2 Cohort')
@@ -129,7 +131,7 @@ else:
         #     probab_options = [0.6, 0.7, 0.8, 0.9, 1]
         # else:
         #     probab_options = [0.8, 0.9, 1]
-        probab_options = [0.6, 0.7, 0.8, 0.9, 1]
+        probab_options = [0.5, 0.6, 0.7, 0.8, 0.9, 1]
         confidence = st.select_slider('Display samples with prediction probability of at least:', options=probab_options, value = 1)
 
         # adjust these thresholds 
@@ -159,6 +161,7 @@ else:
         # may need to add 'submit' button bc of delay with generating IIDs with these metrics
         threshold_results = model_results[(model_results['abs_iqr_lrr'] <= iqr_threshold) & (model_results['cnv_range_count'] >= lower_range_threshold) & 
                                         (model_results['cnv_range_count'] <= upper_range_threshold) & (model_results['Pred Values'] >= confidence)]
+
         cohort_samples = threshold_results['IID']
     else:
         # cohort_samples = model_results.IID[model_results['Pred Values'] >= confidence]
