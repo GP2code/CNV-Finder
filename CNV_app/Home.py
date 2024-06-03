@@ -52,18 +52,31 @@ def plot_sample():
     st.plotly_chart(fig_baf)
 
     # just CNV predicted variants among all variants
-    fig_lrr_full = plot_variants(sample_df_interval[sample_df_interval['ALT_pred']!='<INS>'], x_col='position', gtype_col = 'ALT_pred', y_col='LogRRatio', title=f'{st.session_state["gene_choice"]} Interval Colored by CNV Type')
+    fig_lrr_full = plot_variants(sample_df_interval[sample_df_interval['ALT_pred']!='<INS>'], x_col='position', gtype_col = 'ALT_pred', y_col='LogRRatio', title=f'{st.session_state["gene_choice"]} Interval Colored by CNV Type', xmin=xmin, xmax=xmax)
     st.plotly_chart(fig_lrr_full)
     
-    fig_baf_full = plot_variants(sample_df_interval[(sample_df_interval['ALT_pred']!='<DEL>') & (sample_df_interval['ALT_pred']!='<DUP>')], x_col='position', gtype_col = 'ALT_pred', y_col='BAlleleFreq', title=f'{st.session_state["gene_choice"]} Interval Colored by CNV Type')
+    fig_baf_full = plot_variants(sample_df_interval[(sample_df_interval['ALT_pred']!='<DEL>') & (sample_df_interval['ALT_pred']!='<DUP>')], x_col='position', gtype_col = 'ALT_pred', y_col='BAlleleFreq', title=f'{st.session_state["gene_choice"]} Interval Colored by CNV Type', xmin=xmin, xmax=xmax)
     st.plotly_chart(fig_baf_full)
 
     # B&W all samples
-    bw_lrr_full = plot_variants(sample_df_interval, x_col='position', gtype_col = None, y_col='LogRRatio',midline=True, title=f'All Variants in {st.session_state["gene_choice"]} Interval with Average Line', opacity=0.3)
+    bw_lrr_full = plot_variants(sample_df_interval, x_col='position', gtype_col = None, y_col='LogRRatio',midline=True, title=f'All Variants in {st.session_state["gene_choice"]} Interval with Average Line', opacity=0.3, xmin=xmin, xmax=xmax)
     st.plotly_chart(bw_lrr_full)
     
-    bw_baf_full = plot_variants(sample_df_interval, x_col='position', gtype_col = None, y_col='BAlleleFreq', title=f'All Variants in {st.session_state["gene_choice"]} Interval', opacity=0.3)
+    bw_baf_full = plot_variants(sample_df_interval, x_col='position', gtype_col = None, y_col='BAlleleFreq', title=f'All Variants in {st.session_state["gene_choice"]} Interval', opacity=0.3, xmin=xmin, xmax=xmax)
     st.plotly_chart(bw_baf_full)
+
+    ####  WILL COMMENT OUT #####
+    # # B&W all samples
+    # start_p = 28740088
+    # stop_p = 28767112
+    # true_pos = sample_df_interval[(sample_df_interval['position'] >= start_p) & (sample_df_interval['position'] <= stop_p)]
+    # remaining = sample_df_interval[~((sample_df_interval['position'] >= start_p) & (sample_df_interval['position'] <= stop_p))]
+
+    # bw_lrr_full = plot_variants(remaining, x_col='position', gtype_col = None, y_col='LogRRatio', title=f'All Variants in {st.session_state["gene_choice"]} Interval with Confirmed Deletion', opacity=0.3, cnvs=true_pos, xmin=xmin, xmax=xmax)
+    # st.plotly_chart(bw_lrr_full)
+    
+    # bw_baf_full = plot_variants(remaining, x_col='position', gtype_col = None, y_col='BAlleleFreq', title=f'All Variants in {st.session_state["gene_choice"]} Interval with Confirmed Deletion', opacity=0.3, cnvs=true_pos, xmin=xmin, xmax=xmax)
+    # st.plotly_chart(bw_baf_full)
 
 ### Create sidebar options
 # will expand on model selection - need to distinguish test results based on model version
@@ -85,7 +98,7 @@ st.sidebar.markdown('### Choose an NDD-Related Gene')
 
 # Mix of disease-related genes
 # Main focus for benchmarking
-genes = ['PARK2', 'LINGO2', 'MAPT', 'SNCA']
+genes = ['PARK2', 'LINGO2', 'MAPT']
 
 # Complete list of explored genes
 # genes = ['PARK2', 'APP', 'LINGO2', 'SNCA', 'CHRNA7', 'CYFIP1', 'CPNE4', 'TPCN1', 'PSEN1', 'CREB1', 'LRRK2', 'GBA', 'MAPT', 'ABI3', 'ABCA7', '22q_small', '22q',

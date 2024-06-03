@@ -4,6 +4,6 @@ __pycache__/
 *$py.class
 
 CNV_app/data/*
-ref_files/*
+ref_files_private/*
 CNV_finder/.ipynb_checkpoints/*
 .DS_Store

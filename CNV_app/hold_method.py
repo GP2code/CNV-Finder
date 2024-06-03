@@ -48,8 +48,10 @@ def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', ti
 
     if isinstance(cnvs, pd.DataFrame):
         fig = px.scatter(df, x=x_col, y=y_col, color=gtype_col, color_discrete_map = cmap_choice, color_continuous_scale=px.colors.sequential.matter, width=650, height=497, labels=lmap, symbol_map=smap, hover_data=[gtype_col])
-        fig.update_traces(opacity = opacity)
-        fig.add_traces(px.scatter(cnvs, x=x_col, y=y_col, hover_data=[gtype_col]).update_traces(marker_color="black").data)
+        fig.update_traces(opacity = opacity, marker_color='grey')
+
+        # 549cdc -lr , #B371BE - sr
+        fig.add_traces(px.scatter(cnvs, x=x_col, y=y_col, hover_data=[gtype_col]).update_traces(marker_color="#B371BE").data)
     else:
         if gtype_col == None:
             fig = px.scatter(df, x=x_col, y=y_col, color=gtype_col, color_discrete_sequence=['grey'], width=650, height=497, labels=lmap, symbol_map=smap, opacity=opacity)
