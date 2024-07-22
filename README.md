@@ -22,7 +22,7 @@ pip install -r requirements.txt
 Open run_pipeline.ipynb and run through each cell for the 3 major processes in the pipeline: data preparation for machine learning, application of pre-trained models onto ML-ready data, and creation of app-ready files for Streamlit visualizations. If HPC is unavailable, run the commands defined as "cmd" in terminal. 
 
 ### *Available Parameters*
-#### **ML Data Prep**
+**ML Data Prep**
 --interval_name, type=str, default=None, Name for NDD-related Gene region. If not found in reference file, will be added to ref_files/custom_intervals.csv for future reference/file names (e.g. 22q_small custom interval).
 
 --interval_file, type=str, default='ref_files/glist_hg38_intervals.csv', Gene or other feature intervals to analyze. Header is [NAME,CHR,START,STOP], one line per interval. Autosomes only.
@@ -63,7 +63,7 @@ Open run_pipeline.ipynb and run through each cell for the 3 major processes in t
 
 --test_size, type=int, default=500, Number of samples to include in testing set.
 
-#### **LSTM Model Application**
+**LSTM Model Application**
 --train_file, type=str, default=None, Path to training file with windowed samples.
 
 --test_file, type=str, default=None, Path to testing file with windowed samples.
@@ -81,7 +81,7 @@ Open run_pipeline.ipynb and run through each cell for the 3 major processes in t
 --out_path, type=str, default=None, Path to output reports with suggested format Cohort_Gene or Interval Name.
 
 
-#### **App Prep**
+**App Prep**
 --interval_name, type=str, default=None, Name for NDD-related Gene region.
 
 --interval_file, type=str, default='ref_files/glist_hg38_intervals.csv', Gene or other feature intervals to analyze. Header is [NAME,CHR,START,STOP], one line per interval. Autosomes only.
