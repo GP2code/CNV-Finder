@@ -2,8 +2,6 @@ import pandas as pd
 import numpy as np
 import pickle
 import joblib
-import seaborn as sns
-import torch
 import tensorflow as tf
 
 from sklearn.preprocessing import StandardScaler, normalize
@@ -89,11 +87,9 @@ def train_binary_lstm(X_train_reshaped, y_train, out_path, verbosity=2, val_data
     history = binary_lstm_model.fit(X_train_reshaped, y_train, batch_size=32, epochs=20,
                                     verbose=verbosity, validation_data=val_data)  # default batch size = 32
 
-    # pickle.dump(binary_lstm_model, open(f'{out_path}_{X_train_reshaped.shape[1]}_windows.sav', 'wb'))
-    # joblib.dump(binary_lstm_model, f'{out_path}_{X_train_reshaped.shape[1]}_windows.sav')
-
     # Save model - keras.src module issue in swarm job
-    # binary_lstm_model.save(f'{out_path}_{X_train_reshaped.shape[1]}_windows.keras')
+    # pickle.dump(binary_lstm_model, open(f'{out_path}_windows.sav', 'wb'))
+    # joblib.dump(binary_lstm_model, f'{out_path}_windows.sav')
 
     binary_lstm_model.save(f'{out_path}_windows.keras')
 
@@ -128,5 +124,4 @@ def model_predict(model_file, X_test_reshaped, test_samples, out_path, summary=T
     test_results = test_results.drop(columns=['AboveThreshold'])
 
     print(test_results)
-    # test_results.to_csv(f'{out_path}_{X_test_reshaped.shape[1]}_windows_results.csv', index = False)
     test_results.to_csv(f'{out_path}_windows_results.csv', index=False)

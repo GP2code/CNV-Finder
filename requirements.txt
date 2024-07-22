@@ -1,0 +1,10 @@
+numpy
+pandas
+streamlit
+plotly
+matplotlib
+datetime
+pickle
+joblib
+tensorflow
+scipy
