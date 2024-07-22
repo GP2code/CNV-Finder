@@ -1,2 +1,2 @@
-# CNV-finder
+# CNV-Finder
  

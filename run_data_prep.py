@@ -41,8 +41,8 @@ def main():
     parser.add_argument('--cpus', type=int, default=8,
                         help='Number of CPUs available for the job.')
 
-    # need to figure out training set creation
-    parser.add_argument('--training_ids', type=str, default=None, help='List of IDs used in training set with headers IID. May also include the \
+    # future functionality: training set creation
+    parser.add_argument('--training_ids', type=str, default='ref_files/training_set_IDs.csv', help='List of IDs used in training set with headers IID. May also include the \
                         interval where CNV was found in each sample. Otherwise interval/chromosome with position range must be included in proper labels.')
     parser.add_argument('--testing_ids', type=str, default=None,
                         help='List of IDs used in testing set with header IID.')
