@@ -7,7 +7,7 @@ import plotly.io as pio
 import random
 from datetime import datetime
 
-from hold_method import plot_variants
+from variant_plots import plot_variants
 
 
 st.set_page_config(
@@ -77,21 +77,21 @@ def plot_sample():
 
 
 # Create sidebar options
-st.sidebar.markdown('### Choose a Model')
+st.sidebar.markdown('### Choose a model:')
 models_dict = {'Preliminary Deletion Model': 'prelim_del_model', 'Preliminary Duplication Model': 'prelim_dup_model',
                'Updated Deletion Model': 'updated_del_model', 'Updated Duplication Model': 'updated_dup_model',
                'Final Deletion Model': 'final_del_model', 'Final Duplication Model': 'final_dup_model'}
 model_name = st.sidebar.selectbox(
     label='Model Selection', label_visibility='collapsed', options=list(models_dict.keys()))
 
-# split GP2 by cohort but also provide full release option
-st.sidebar.markdown('### Choose a GP2 Cohort')
+# split by cohort folder
+st.sidebar.markdown('### Choose a cohort:')
 cohorts = next(os.walk(f'CNV_app/data/'))[1]
 cohort_name = st.sidebar.selectbox(
     label='Cohort Selection', label_visibility='collapsed', options=sorted(cohorts))
 
 # pre-print genes of interest: adjust for intervals included in results
-st.sidebar.markdown('### Choose an NDD-Related Gene')
+st.sidebar.markdown('### Choose an NDD-related gene:')
 genes = ['PARK2', 'LINGO2', 'MAPT', 'SNCA', 'APP']
 gene_name = st.sidebar.selectbox(
     label='NDD-Related Gene Selection', label_visibility='collapsed', options=genes)
@@ -109,7 +109,7 @@ if 'cohort_choice' in st.session_state:
         option_change = True
 if 'threshold_submit' not in st.session_state:
     st.session_state['threshold_submit'] = False
-    
+
 if 'yes_choices' not in st.session_state:
     st.session_state['yes_choices'] = []
 if 'maybe_choices' not in st.session_state:
@@ -128,6 +128,7 @@ if 'maybe_type' not in st.session_state:
     st.session_state['maybe_type'] = []
 if 'no_type' not in st.session_state:
     st.session_state['no_type'] = []
+
 
 def threshold_true():
     st.session_state['threshold_submit'] = True
@@ -192,7 +193,7 @@ else:
                 cohort_samples = model_results.IID[model_results['Pred Values'] == 1]
 
         samples_seen = f'{st.session_state["gene_choice"]}_{st.session_state["cohort_choice"]}_{st.session_state["model_choice"]}sample_seen'
-        
+
         if samples_seen not in st.session_state:
             st.session_state[samples_seen] = []
         if 'sample_name' not in st.session_state:
@@ -315,17 +316,17 @@ else:
     # Add download button and make choices into dataframes/dictionaries that include gene name where CNV was found/not found
     with st.sidebar.expander("View Reported Samples"):
         st.data_editor(yes_report,
-                        hide_index=True,
-                        use_container_width=True
-                        )
+                       hide_index=True,
+                       use_container_width=True
+                       )
         st.data_editor(maybe_report,
-                        hide_index=True,
-                        use_container_width=True
-                        )
+                       hide_index=True,
+                       use_container_width=True
+                       )
         st.data_editor(no_report,
-                        hide_index=True,
-                        use_container_width=True
-                        )
+                       hide_index=True,
+                       use_container_width=True
+                       )
 
     # data_editor in streamlit 1.32 version has download to csv option built-in
     save = side_btn2.button('Save Report')

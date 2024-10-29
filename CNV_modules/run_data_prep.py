@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import argparse
 import multiprocessing
-from CNV_finder.data_methods import check_interval, create_test_set, make_window_df, fill_window_df
+from cnv_finder.data_methods import check_interval, create_test_set, make_window_df, fill_window_df
 
 
 def main():

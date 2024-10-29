@@ -1,6 +1,6 @@
 import numpy as np
 import argparse
-from CNV_finder.model_methods import prep_ml_datasets, train_binary_lstm, model_predict
+from cnv_finder.model_methods import prep_ml_datasets, train_binary_lstm, model_predict
 
 
 def main():

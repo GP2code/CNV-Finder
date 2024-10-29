@@ -1,7 +1,7 @@
 import multiprocessing
 import pandas as pd
 import argparse
-from CNV_finder.data_methods import check_interval, create_app_ready_file, generate_pred_cnvs
+from cnv_finder.data_methods import check_interval, create_app_ready_file, generate_pred_cnvs
 
 
 def main():
