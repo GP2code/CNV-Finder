@@ -9,8 +9,8 @@ CNV_finder/
 │
 ├── app/
 │   ├── data/
-│   │   └── gp2_cohort
-│   │   │   └── app
+│   │   └── gp2_cohort/
+│   │   │   └── app/
 │   ├── Home.py
 │   ├── variant_plots.py
 ├── modules/
