@@ -44,7 +44,7 @@ CNV_finder/
 ````
 git clone https://github.com/nvk23/CNV_finder.git
 
-cd CNV_finder
+cd CNV-Finder
 ````
 
 ### Install the required packages:

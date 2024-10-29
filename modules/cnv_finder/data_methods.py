@@ -5,26 +5,28 @@ import plotly.express as px
 import random
 from scipy.stats import iqr
 
-# Supress copy warning.
+# Supress pandas copy warning
 pd.options.mode.chained_assignment = None
 
 
-# create chromosome interval here
+# Define function to check for a specific chromosome interval in the interval reference file
 def check_interval(interval_name, interval_file='ref_files/glist_hg38_intervals.csv'):
     interval_dir = os.path.dirname(os.path.abspath(interval_file))
 
-    # can catch for other common NDD genes
+    # Handle alternate names for genes, e.g., PRKN and PARK2 - can expand to other common NDD genes
     if interval_name == 'PRKN':
         interval_name = 'PARK2'
 
+    # Read interval data and search for specified interval name
     interval_df = pd.read_csv(interval_file)
     positions = interval_df[interval_df.NAME == interval_name]
     if len(positions) > 0:
-        # print(positions)
+        # Extract chromosome, start, and stop positions if found
         chrom = positions.CHR.values[0]
         start_pos = positions.START.values[0]
         stop_pos = positions.STOP.values[0]
     else:
+        # Add extracted chromosome, start, and stop positions to custom_interval file for future reference if not found
         chrom, start_pos, stop_pos = None, None, None
         print('Interval name not found in interval reference file. Added to custom reference file with base pair positions you provided.')
         new_intervals = pd.DataFrame(
@@ -33,7 +35,7 @@ def check_interval(interval_name, interval_file='ref_files/glist_hg38_intervals.
 
     return chrom, start_pos, stop_pos
 
-
+# Function to find the interval for a given position
 def find_interval(df, position):
     for start, stop in zip(df['POS'], df['POS_stop']):
         if start <= position <= stop:
@@ -41,6 +43,7 @@ def find_interval(df, position):
     return None
 
 
+# Function to create overlapping windows for analysis
 def create_overlapping_windows(data, window_size, num_intervals):
     # Finds necessary overlap to reach the end of the data w/ specified # windows
     total_data_points = len(data)
@@ -62,48 +65,45 @@ def create_overlapping_windows(data, window_size, num_intervals):
 
     return start, stop
 
-
+# Function to calculate mean within a window
 def mean_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (
         df['position'] <= row['STOP'])
     return df.loc[interval_mask, col_name].mean()
 
-
+# Function to calculate interquartile range (IQR) within a window
 def iqr_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (
         df['position'] <= row['STOP'])
     return iqr(df.loc[interval_mask, col_name], interpolation='midpoint')
 
-
+# Function to calculate standard deviation within a window
 def std_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (
         df['position'] <= row['STOP'])
     return df.loc[interval_mask, col_name].std()
 
-
+# Function to calculate dosage within a full gene interval
 def dosage_full(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (
         df['position'] <= row['STOP'])
     calls = sum(df.loc[interval_mask, col_name])
 
-    # catch potential division by zero error
+    # Catches potential division by zero error
     if len(df) > 0:
         dosage = calls/len(df)
     else:
         dosage = 0
     return dosage
 
-
+# Placeholder for creating a training set
 def create_train_set():
-    # create file if doesn't exist, or append to existing file so you can add pos/neg cases
-    # can potentially supply path to folder with all hand-checked samples
-    # will accept output from app with option to make gene-specific training test
     pass
 
-
+# Function to create a test set of samples
 def create_test_set(master_key, num_samples, training_file, snp_metrics_path, out_path, study_name='all', interval_name=None):
-    # need master key, study name or GP2_all for whole GP2, need path to training set so no overlap with test set
-    # can later change so that it only doesn't repeat IIDs for the specific gene of interest
+    
+    # Takes master key, study name for subset or uses whole GP2, and path to training set so no overlap with test set
     if master_key.endswith('.txt'):
         master = pd.read_csv(master_key, sep='\t')
     elif master_key.endswith('.csv'):
