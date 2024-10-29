@@ -7,13 +7,13 @@ CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on S
 ```
 CNV_finder/
 │
-├── CNV_app/
+├── app/
 │   ├── data/
 │   │   └── gp2_cohort
 │   │   │   └── app
 │   ├── Home.py
 │   ├── variant_plots.py
-├── CNV_modules/
+├── modules/
 │   ├── ref_files/
 │   │   └── models/
 │   │   │   └── final_del_5_50_combo4_lstm.keras
