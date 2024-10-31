@@ -30,7 +30,7 @@ def generate_sample(cohort_samples):
 
 
 def plot_sample():
-    sample_df_path = f"data/{st.session_state['cohort_choice'].lower()}/app/{st.session_state['model_choice']}/{st.session_state['gene_choice']}/app/pred_cnvs/{st.session_state['sample_name']}_full_interval.csv"
+    sample_df_path = f"app/data/{st.session_state['cohort_choice']}/{st.session_state['model_choice']}/{st.session_state['gene_choice']}/pred_cnvs/{st.session_state['sample_name']}_full_interval.csv"
     sample_df_interval = pd.read_csv(sample_df_path)
     sample_df_interval['ALT_pred'].fillna('<None>', inplace=True)
     pred_cnv = sample_df_interval[sample_df_interval['CNV_call'] == 1]
@@ -82,11 +82,11 @@ models_dict = {'Preliminary Deletion Model': 'prelim_del_model', 'Preliminary Du
                'Updated Deletion Model': 'updated_del_model', 'Updated Duplication Model': 'updated_dup_model',
                'Final Deletion Model': 'final_del_model', 'Final Duplication Model': 'final_dup_model'}
 model_name = st.sidebar.selectbox(
-    label='Model Selection', label_visibility='collapsed', options=list(models_dict.keys()))
+    label='Model Selection', label_visibility='collapsed', options=list(models_dict.keys()), index = 4)
 
 # split by cohort folder
 st.sidebar.markdown('### Choose a cohort:')
-cohorts = next(os.walk(f'data/'))[1]
+cohorts = next(os.walk('app/data/'))[1]
 cohort_name = st.sidebar.selectbox(
     label='Cohort Selection', label_visibility='collapsed', options=sorted(cohorts))
 
@@ -140,7 +140,7 @@ st.session_state['gene_choice'] = gene_name
 
 # Main Page
 st.title('Evaluation of CNV Predictions')
-model_path = f'data/{cohort_name.lower()}/app/{models_dict[model_name]}/{gene_name}/app/{cohort_name.upper()}_{gene_name}_app_ready.csv'
+model_path = f'app/data/{cohort_name}/{models_dict[model_name]}/{gene_name}/{cohort_name}_{gene_name}_app_ready.csv'
 
 if not os.path.isfile(model_path):
     st.error('No CNVs to display!')
@@ -336,8 +336,8 @@ else:
         current_time = str(datetime.now().strftime("%H-%M-%S"))
 
         yes_report.to_csv(
-            f'data/yes_samples_{current_date}_{current_time}.csv', index=False)
+            f'app/data/yes_samples_{current_date}_{current_time}.csv', index=False)
         maybe_report.to_csv(
-            f'data/maybe_samples_{current_date}_{current_time}.csv', index=False)
+            f'app/data/maybe_samples_{current_date}_{current_time}.csv', index=False)
         no_report.to_csv(
-            f'data/no_samples_{current_date}_{current_time}.csv', index=False)
+            f'app/data/no_samples_{current_date}_{current_time}.csv', index=False)

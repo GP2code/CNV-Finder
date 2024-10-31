@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-CNV_app/data_private/*
-CNV_modules/ref_files_private/*
+app/data_private/*
+modules/ref_files_private/*
 .DS_Store
 .gitattributes
