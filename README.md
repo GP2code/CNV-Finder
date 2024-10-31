@@ -9,12 +9,19 @@ CNV_finder/
 │
 ├── app/
 │   ├── data/
-│   │   └── gp2_cohort/
-│   │   │   └── app/
+│   │   └── cohort/
+│   │   │   └── final_del_model/
+│   │   │   └── final_dup_model/
 │   ├── Home.py
 │   ├── variant_plots.py
 ├── modules/
-│   ├── ref_files/
+│   ├── cnv_finder/
+│   │   └── data_methods.py
+│   │   └── model_methods.py
+│   ├── run_data_prep.py
+│   ├── run_lstm_model.py
+│   ├── run_app_prep.py
+├── ref_files/
 │   │   └── models/
 │   │   │   └── final_del_5_50_combo4_lstm.keras
 │   │   │   └── final_dup_10_70_combo6_lstm.keras
@@ -25,12 +32,6 @@ CNV_finder/
 │   │   └── custom_intervals.csv
 │   │   └── glist_hg38_interval.csv
 │   │   └── training_set_IDs.csv
-│   ├── cnv_finder/
-│   │   └── data_methods.py
-│   │   └── model_methods.py
-│   ├── run_data_prep.py
-│   ├── run_lstm_model.py
-│   ├── run_app_prep.py
 ├── docs/
 │   ├── parameter_guide.md
 ├── run_pipeline.ipynb

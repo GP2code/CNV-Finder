@@ -5,7 +5,7 @@ import plotly.express as px
 import random
 from scipy.stats import iqr
 
-# Supress pandas copy warning
+# Supress copy warning.
 pd.options.mode.chained_assignment = None
 
 
@@ -17,11 +17,9 @@ def check_interval(interval_name, interval_file='ref_files/glist_hg38_intervals.
     if interval_name == 'PRKN':
         interval_name = 'PARK2'
 
-    # Read interval data and search for specified interval name
     interval_df = pd.read_csv(interval_file)
     positions = interval_df[interval_df.NAME == interval_name]
     if len(positions) > 0:
-        # Extract chromosome, start, and stop positions if found
         chrom = positions.CHR.values[0]
         start_pos = positions.START.values[0]
         stop_pos = positions.STOP.values[0]
@@ -43,7 +41,6 @@ def find_interval(df, position):
     return None
 
 
-# Function to create overlapping windows for analysis
 def create_overlapping_windows(data, window_size, num_intervals):
     # Finds necessary overlap to reach the end of the data w/ specified # windows
     total_data_points = len(data)
@@ -65,25 +62,25 @@ def create_overlapping_windows(data, window_size, num_intervals):
 
     return start, stop
 
-# Function to calculate mean within a window
+
 def mean_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (
         df['position'] <= row['STOP'])
     return df.loc[interval_mask, col_name].mean()
 
-# Function to calculate interquartile range (IQR) within a window
+
 def iqr_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (
         df['position'] <= row['STOP'])
     return iqr(df.loc[interval_mask, col_name], interpolation='midpoint')
 
-# Function to calculate standard deviation within a window
+
 def std_within_interval(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (
         df['position'] <= row['STOP'])
     return df.loc[interval_mask, col_name].std()
 
-# Function to calculate dosage within a full gene interval
+
 def dosage_full(row, col_name, df):
     interval_mask = (df['position'] >= row['START']) & (
         df['position'] <= row['STOP'])
@@ -100,20 +97,19 @@ def dosage_full(row, col_name, df):
 def create_train_set():
     pass
 
-# Function to create a test set of samples
+
 def create_test_set(master_key, num_samples, training_file, snp_metrics_path, out_path, study_name='all', interval_name=None):
-    
     # Takes master key, study name for subset or uses whole GP2, and path to training set so no overlap with test set
     if master_key.endswith('.txt'):
         master = pd.read_csv(master_key, sep='\t')
     elif master_key.endswith('.csv'):
         master = pd.read_csv(master_key)
-
-    full_samples_list = master[master.GDPR == 0]
-
+        
     if study_name.lower() != 'all':
-        full_samples_list = full_samples_list[full_samples_list.study == study_name]
-
+        full_samples_list = master[master.study == study_name]
+    else:
+        full_samples_list = master
+        
     train_df = pd.read_csv(training_file)
     train_df.columns = map(str.lower, train_df.columns)
 
@@ -140,9 +136,8 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
     for i in range(len(test_set)):
         sample = test_set.IID.iloc[i]
         # label = test_set.label.iloc[i]
-        code = sample.split('_')[0]
 
-        mfile1 = f'{snp_metrics_path}/{code}/snp_metrics_{code}/Sample_ID={sample}'
+        mfile1 = f'{snp_metrics_path}/{sample}'
 
         if os.path.isdir(mfile1):
             test_set['snp_metrics_path'].iloc[i] = mfile1
@@ -199,7 +194,7 @@ def fill_window_df(sample_data):
                                names=['#CHROM', 'POS', 'ID', 'REF', 'ALT'], usecols=['ID'])
             sample_df = metrics_df.loc[(metrics_df.snpID.isin(pvar.ID)) & (
                 metrics_df.GenTrain_Score >= min_gentrain)]
-    else:
+    elif 'GenTrain_Score' in metrics_df.columns:
         sample_df = metrics_df.loc[(metrics_df.GenTrain_Score >= min_gentrain)]
 
     sample_df_interval = sample_df[['snpID', 'chromosome', 'position', 'BAlleleFreq', 'LogRRatio']][(sample_df['chromosome'] == chr)
@@ -326,7 +321,7 @@ def generate_pred_cnvs(sample_data):
                                names=['#CHROM', 'POS', 'ID', 'REF', 'ALT'], usecols=['ID'])
             sample_df = metrics_df.loc[(metrics_df.snpID.isin(pvar.ID)) & (
                 metrics_df.GenTrain_Score >= min_gentrain)]
-    else:
+    elif 'GenTrain_Score' in metrics_df.columns:
         sample_df = metrics_df.loc[(metrics_df.GenTrain_Score >= min_gentrain)]
 
     sample_df_interval = sample_df[['snpID', 'chromosome', 'position', 'BAlleleFreq', 'LogRRatio']][(sample_df['chromosome'] == chr)
