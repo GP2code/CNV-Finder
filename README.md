@@ -3,6 +3,27 @@
 ## Overview
 CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on SNP array data to expedite large-scale identification of CNVs within predefined genomic regions. Manuscript coming soon!
 
+## Installation
+### Clone the repository:
+
+````
+git clone https://github.com/nvk23/CNV_finder.git
+
+cd CNV-Finder
+````
+
+### Install the required packages:
+
+````
+pip install -r requirements.txt
+````
+
+## Running the Pipeline
+Open the `run_pipeline.ipynb` notebook and sequentially run through each cell to perform the 3 major processes in the pipeline: ML data preprocessing, application of pre-trained models/training new models on the prepared data, and the creation of app-ready files for visualizations in the CNV-Finder app. If HPC is unavailable, run the commands defined as "cmd" in the terminal. 
+
+### Available Parameters
+For a more in-depth guide to the parameters available for each process, please read through the following documentation: `docs/parameter_guide.md`. 
+
 ## Project Structure
 ```
 CNV_finder/
@@ -50,23 +71,7 @@ CNV_finder/
 ├── README.md
 ```
 
-## Installation
-### Clone the repository:
-
-````
-git clone https://github.com/nvk23/CNV_finder.git
-
-cd CNV-Finder
-````
-
-### Install the required packages:
-
-````
-pip install -r requirements.txt
-````
-
-## Running the Pipeline
-Open the `run_pipeline.ipynb` notebook and sequentially run through each cell to perform the 3 major processes in the pipeline: ML data preprocessing, application of pre-trained models/training new models on the prepared data, and the creation of app-ready files for visualizations in the CNV-Finder app. If HPC is unavailable, run the commands defined as "cmd" in the terminal. 
-
-### Available Parameters
-For a more in-depth guide to the parameters available for each process, please read through the following documentation: `docs/parameter_guide.md`. 
+## Software
+|               Software              |      Version(s)     |                       Resource URL                       |       RRID      |                                               Notes                                               |
+|:-----------------------------------:|:-------------------:|:--------------------------------------------------------:|:---------------:|:-------------------------------------------------------------------------------------------------:|
+|               Python Programming Language              |      3.9     |        http://www.python.org/        | RRID:SCR_008394 |                Refer to requirements.txt for necessary packages                |
