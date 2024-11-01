@@ -7,7 +7,7 @@ CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on S
 ### Clone the repository:
 
 ````
-git clone https://github.com/nvk23/CNV_finder.git
+git clone https://github.com/nvk23/CNV-Finder.git
 
 cd CNV-Finder
 ````
