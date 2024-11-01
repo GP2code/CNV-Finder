@@ -8,10 +8,7 @@ CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on S
 CNV_finder/
 │
 ├── app/
-│   ├── data/
-│   │   └── cohort/
-│   │   │   └── final_del_model/
-│   │   │   └── final_dup_model/
+│   ├── selections/
 │   ├── Home.py
 │   ├── variant_plots.py
 ├── modules/
@@ -32,6 +29,20 @@ CNV_finder/
 │   │   └── custom_intervals.csv
 │   │   └── glist_hg38_interval.csv
 │   │   └── training_set_IDs.csv
+├── example_data/
+│   │   └── snp_metrics/
+│   │   └── test_master_key.csv
+├── testing/
+│   ├── app_ready/
+│   │   └── cohort/
+│   │   │   └── final_del_model/
+│   │   │   └── final_dup_model/
+│   ├── del/
+│   │   └── cohort/
+│   │   │   └── gene/
+│   ├── dup/
+│   │   └── cohort/
+│   │   │   └── gene/
 ├── docs/
 │   ├── parameter_guide.md
 ├── run_pipeline.ipynb

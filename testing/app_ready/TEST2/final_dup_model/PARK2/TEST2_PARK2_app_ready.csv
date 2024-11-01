@@ -1,0 +1,6 @@
+IID,Pred Values,Artifact Warning,label,snp_metrics_path,cnv_range_count,abs_iqr_lrr
+Sample_2142,1.0,1,EUR,example_data/snp_metrics/Sample_2142,274,0.5595345
+Sample_1652,1.0,1,AMR,example_data/snp_metrics/Sample_1652,246,0.651369
+Sample_1633,1.0,1,EUR,example_data/snp_metrics/Sample_1633,139,0.5842155
+Sample_1993,1.0,1,EUR,example_data/snp_metrics/Sample_1993,357,0.581895
+Sample_1560,1.0,1,EUR,example_data/snp_metrics/Sample_1560,443,0.5899884999999999
