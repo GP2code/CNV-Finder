@@ -23,10 +23,9 @@ def main():
     parser.add_argument('--out_path', type=str, default=None,
                         help='Path to output reports with suggested format Cohort_Gene or Interval Name.')
 
+    # Define variables from argument flags
     args = parser.parse_args()
 
-    # fix boolean flags later
-    # more customizable features will be added - model type/architecture params/summary output
     train_file = args.train_file
     test_file = args.test_file
     train_model = args.train
@@ -36,16 +35,20 @@ def main():
     model_summary = args.print_summary
     out_path = args.out_path
 
+    # Default feature names
     if len(feature_names) == 0:
         feature_names = ['dosage_interval', 'dosage_gene', 'del_dosage',
                          'std_baf', 'std_lrr', 'iqr_baf', 'iqr_lrr', 'avg_baf', 'avg_lrr']
 
+    # ML data pre-processing for LSTM architecture
     X_train_reshaped, y_train, X_test_reshaped, train_samples, test_samples = prep_ml_datasets(
         feature_names, train_file, test_file)
 
+    # Train model with reshaped training set
     if train_model:
         history = train_binary_lstm(X_train_reshaped, y_train, out_path)
 
+    # Use newly trained or pre-trained model to make predictions on reshaped test sets
     if predict:
         if train_model:
             model_file = f'{out_path}_{X_train_reshaped.shape[1]}_windows.keras'

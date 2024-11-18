@@ -41,7 +41,7 @@ def main():
     parser.add_argument('--cpus', type=int, default=8,
                         help='Number of CPUs available for the job.')
 
-    # future functionality: training set creation
+    # Future functionality will include training set creation
     parser.add_argument('--training_ids', type=str, default='ref_files/training_set_IDs.csv', help='List of IDs used in training set with headers IID. May also include the \
                         interval where CNV was found in each sample. Otherwise interval/chromosome with position range must be included in proper labels.')
     parser.add_argument('--testing_ids', type=str, default=None,
@@ -55,6 +55,7 @@ def main():
     parser.add_argument('--test_size', type=int, default=500,
                         help='Number of samples to include in testing set')
 
+    # Define variables from argument flags
     args = parser.parse_args()
 
     interval_name = args.interval_name
@@ -80,14 +81,14 @@ def main():
     train_df = args.training_ids
     test_df = args.testing_ids
 
-    # if submitted interval in interval file, find positions
-    # if empty dataframe, request new name/manual entry of chr/positions
+    # Finds the chromosome, start, and stop positions for a submitted interval name
     if interval_name:
         chrom, start_pos, stop_pos = check_interval(
             interval_name, interval_file)
         if not chrom or not start_pos or not stop_pos:
             print('Interval name not found in interval reference file. Please enter a new interval name or manually enter chromosome with start and stop base pair positions for interval of interest.')
 
+    # Creates testing set
     if create_test:
         cnv_exists = np.nan
 
@@ -98,16 +99,17 @@ def main():
             # Read in testing IDs
             test_df = pd.read_csv(f'{out_path}_testing_IDs.csv')
 
-        # Create df to hold windows that span interval of interest
+        # Create DataFrame to hold windows that span interval of interest
         all_samples = pd.DataFrame(columns=['START', 'STOP', 'dosage_interval', 'dosage_full', 'del_dosage_full', 'dup_dosage_full', 'ins_dosage_full', 'del_dosage_interval', 'dup_dosage_interval',
                                    'ins_dosage_interval', 'avg_baf', 'avg_mid_baf', 'avg_lrr', 'std_baf', 'std_mid_baf', 'std_lrr', 'iqr_baf', 'iqr_mid_baf', 'iqr_lrr', 'cnv_range_count', 'IID', 'CHR', 'window', 'CNV_exists'])
         all_samples.to_csv(f'{out_path}_samples_windows.csv', index=False)
 
-        # Parallelize creation of df that holds all samples with aggregated feature in each window
+        # Parallelize creation of files that hold all samples with aggregated features in each window
         with multiprocessing.Pool(cpus) as pool:
             pool.map(fill_window_df, [(out_path, row.IID, row.snp_metrics_path, split_interval, total_windows, cnv_exists,
                      chrom, start_pos, stop_pos, buffer, min_gentrain, bim, pvar) for index, row in test_df.iterrows()])
 
+    # Creates training set
     if create_train:
         train_df = pd.read_csv(train_df)
         train_df.columns = map(str.lower, train_df.columns)
@@ -128,15 +130,15 @@ def main():
                 train_df[['chr', 'start', 'stop']
                          ] = check_interval(interval_name)
             else:
-                # add catch if someone doesn't enter interval name or chr, start, stop
+                # Requires that chromosome, start, and stop positions are entered if interval_name not recognized
                 train_df[['chr', 'start', 'stop']] = chrom, start_pos, stop_pos
 
-        # Create df to hold windows that span interval of interest
+        # Create DataFrame to hold windows that span interval of interest
         all_samples = pd.DataFrame(columns=['START', 'STOP', 'dosage_interval', 'dosage_full', 'del_dosage_full', 'dup_dosage_full', 'ins_dosage_full', 'del_dosage_interval', 'dup_dosage_interval',
                                    'ins_dosage_interval', 'avg_baf', 'avg_mid_baf', 'avg_lrr', 'std_baf', 'std_mid_baf', 'std_lrr', 'iqr_baf', 'iqr_mid_baf', 'iqr_lrr', 'cnv_range_count', 'IID', 'CHR', 'window', 'CNV_exists'])
         all_samples.to_csv(f'{out_path}_samples_windows.csv', index=False)
 
-        # Parallelize creation of df that holds all samples with aggregated feature in each window
+        # Parallelize creation of files that hold all samples with aggregated features in each window
         with multiprocessing.Pool(cpus) as pool:
             pool.map(fill_window_df, [(out_path, row.iid, row.snp_metrics_path, split_interval, total_windows, row.cnv_exists,
                      row.chr, row.start, row.stop, buffer, min_gentrain, bim, pvar) for index, row in train_df.iterrows()])
