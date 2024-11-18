@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
 import argparse
 import multiprocessing
-from cnv_finder.data_methods import check_interval, create_test_set, make_window_df, fill_window_df
+import pandas as pd
+import numpy as np
+from cnv_finder.data_methods import check_interval, create_test_set, fill_window_df
 
 
 def main():

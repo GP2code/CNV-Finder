@@ -1,5 +1,5 @@
-import numpy as np
 import argparse
+import numpy as np
 from cnv_finder.model_methods import prep_ml_datasets, train_binary_lstm, model_predict
 
 
