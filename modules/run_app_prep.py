@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--make_app_ready', action='store_true',
                         help='Create 1 app ready file including all testing samples with necessary info for app creation.')
 
+    # Define variables from argument flags
     args = parser.parse_args()
 
     interval_name = args.interval_name
@@ -59,18 +60,19 @@ def main():
     out_path = args.out_path
     app_ready = args.make_app_ready
 
-    # if submitted interval in interval file, find positions
-    # if empty dataframe, request new name/manual chr/positions
+    # Finds the chromosome, start, and stop positions for a submitted interval name
     if interval_name:
         chrom, start_pos, stop_pos = check_interval(
             interval_name, interval_file)
         if not chrom or not start_pos or not stop_pos:
             print('Interval name not found in interval reference file. Please enter a new interval name or manually enter chromosome with start and stop base pair positions for interval of interest.')
 
+    # Prepares app-ready files for samples with predicted values above a specified threshold
     if app_ready:
         above_probab = create_app_ready_file(
             test_set_ids, test_set_windows, test_set_results, out_path, probability)
 
+        # Parallelizes the file creation process
         with multiprocessing.Pool(cpus) as pool:
             pool.map(generate_pred_cnvs, [(row.IID, row.snp_metrics_path, chrom, start_pos, stop_pos,
                      out_path, buffer, min_gentrain, bim, pvar) for index, row in above_probab.iterrows()])
