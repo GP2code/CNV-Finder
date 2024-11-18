@@ -27,48 +27,53 @@ For a more in-depth guide to the parameters available for each process, please r
 ## Project Structure
 ```
 CNV_finder/
-│
 ├── app/
 │   ├── selections/
 │   ├── Home.py
-│   ├── variant_plots.py
+│   └── variant_plots.py
+│
 ├── modules/
 │   ├── cnv_finder/
-│   │   └── data_methods.py
+│   │   ├── data_methods.py
 │   │   └── model_methods.py
 │   ├── run_data_prep.py
 │   ├── run_lstm_model.py
-│   ├── run_app_prep.py
+│   └── run_app_prep.py
+│
 ├── ref_files/
-│   │   └── models/
-│   │   │   └── final_del_5_50_combo4_lstm.keras
-│   │   │   └── final_dup_10_70_combo6_lstm.keras
-│   │   │   └── updated_del_5_50_combo4_lstm.keras
-│   │   │   └── updated_dup_10_70_combo6_lstm.keras
-│   │   │   └── prelim_del_5_50_combo4_lstm.keras
-│   │   │   └── prelim_dup_10_70_combo6_lstm.keras
-│   │   └── custom_intervals.csv
-│   │   └── glist_hg38_interval.csv
-│   │   └── training_set_IDs.csv
+│   ├── models/
+│   │   ├── final_del_5_50_combo4_lstm.keras
+│   │   ├── final_dup_10_70_combo6_lstm.keras
+│   │   ├── updated_del_5_50_combo4_lstm.keras
+│   │   ├── updated_dup_10_70_combo6_lstm.keras
+│   │   ├── prelim_del_5_50_combo4_lstm.keras
+│   │   └── prelim_dup_10_70_combo6_lstm.keras
+│   ├── custom_intervals.csv
+│   ├── glist_hg38_interval.csv
+│   └── training_set_IDs.csv
+│
 ├── example_data/
-│   │   └── snp_metrics/
-│   │   └── test_master_key.csv
+│   ├── snp_metrics/
+│   └── test_master_key.csv
+│
 ├── testing/
 │   ├── app_ready/
-│   │   └── cohort/
-│   │   │   └── final_del_model/
+│   │   ├── cohort/
+│   │   │   ├── final_del_model/
 │   │   │   └── final_dup_model/
 │   ├── del/
-│   │   └── cohort/
+│   │   ├── cohort/
 │   │   │   └── gene/
-│   ├── dup/
-│   │   └── cohort/
-│   │   │   └── gene/
+│   └── dup/
+│       └── cohort/
+│           └── gene/
+│
 ├── docs/
-│   ├── parameter_guide.md
+│   └── parameter_guide.md
+│
 ├── run_pipeline.ipynb
 ├── requirements.txt
-├── README.md
+└── README.md
 ```
 
 ## Software
