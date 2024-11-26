@@ -3,6 +3,7 @@
 `GP2 ❤️ Open Science 😍`
 
 [![DOI](https://zenodo.org/badge/890546338.svg)](https://doi.org/10.5281/zenodo.14182563)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Overview
 CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on SNP array data to expedite large-scale identification of CNVs within predefined genomic regions. Manuscript coming soon!
