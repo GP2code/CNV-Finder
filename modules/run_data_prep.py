@@ -1,9 +1,9 @@
+import os
 import argparse
 import multiprocessing
 import pandas as pd
 import numpy as np
-from cnv_finder.data_methods import check_interval, create_test_set, fill_window_df
-
+from cnv_finder.data_methods import check_interval, subset_metadata, create_test_set, fill_window_df, merge_samples
 
 def main():
     parser = argparse.ArgumentParser(
@@ -32,6 +32,7 @@ def main():
                         help='PLINK2 .pvar file following sample QC.')
     parser.add_argument('--master_file', type=str, default='ref_files/master_key.txt', help='Master key for all available samples in data \
                         release (need IID and binary GDPR (0-no, 1-yes) column).')
+    parser.add_argument('--metadata_path', type=str, default='ref_files/NBA_metadata', help='Repeated SNP metadata')
     parser.add_argument('--study_name', type=str, default='all',
                         help='Subset or cohort of interest from larger data release.')
     parser.add_argument('--metrics_path', type=str, default='ref_files/snp_metrics', help='Path to SNP metrics files/parquets with the format \
@@ -71,6 +72,7 @@ def main():
     bim = args.bim_file
     pvar = args.pvar_file
     master_file = args.master_file
+    metadata_path = args.metadata_path
     study_name = args.study_name
     snp_metrics_path = args.metrics_path
     out_path = args.out_path
@@ -88,26 +90,32 @@ def main():
         if not chrom or not start_pos or not stop_pos:
             print('Interval name not found in interval reference file. Please enter a new interval name or manually enter chromosome with start and stop base pair positions for interval of interest.')
 
+    # Subsets metadata file for relevant info
+    if metadata_path:
+        snp_info = subset_metadata(
+            metadata_path, chrom, start_pos, stop_pos, buffer, min_gentrain)
+
     # Creates testing set
     if create_test:
         cnv_exists = np.nan
 
         if not test_df:
             create_test_set(master_file, test_size, train_df, snp_metrics_path,
-                            out_path, study_name, interval_name=interval_name)
+                            out_path, chrom, study_name, interval_name=interval_name)
 
             # Read in testing IDs
             test_df = pd.read_csv(f'{out_path}_testing_IDs.csv')
 
-        # Create DataFrame to hold windows that span interval of interest
-        all_samples = pd.DataFrame(columns=['START', 'STOP', 'dosage_interval', 'dosage_full', 'del_dosage_full', 'dup_dosage_full', 'ins_dosage_full', 'del_dosage_interval', 'dup_dosage_interval',
-                                   'ins_dosage_interval', 'avg_baf', 'avg_mid_baf', 'avg_lrr', 'std_baf', 'std_mid_baf', 'std_lrr', 'iqr_baf', 'iqr_mid_baf', 'iqr_lrr', 'cnv_range_count', 'IID', 'CHR', 'window', 'CNV_exists'])
-        all_samples.to_csv(f'{out_path}_samples_windows.csv', index=False)
+        out_dir = os.path.dirname(out_path)
+        tmp_dir = f'{out_dir}/tmp'
+        os.makedirs(tmp_dir, exist_ok=True)
 
         # Parallelize creation of files that hold all samples with aggregated features in each window
         with multiprocessing.Pool(cpus) as pool:
-            pool.map(fill_window_df, [(out_path, row.IID, row.snp_metrics_path, split_interval, total_windows, cnv_exists,
+            pool.map(fill_window_df, [(tmp_dir, row.IID, row.snp_metrics_path, snp_info, split_interval, total_windows, cnv_exists,
                      chrom, start_pos, stop_pos, buffer, min_gentrain, bim, pvar) for index, row in test_df.iterrows()])
+
+        merge_samples(tmp_dir, out_path)
 
     # Creates training set
     if create_train:

@@ -1,6 +1,6 @@
 IID,Pred Values,Artifact Warning,label,snp_metrics_path,cnv_range_count,abs_iqr_lrr
-Sample_1112,0.91502345,1,EUR,example_data/snp_metrics/Sample_1112,222,0.5523075000000001
-Sample_1104,1.0,1,EUR,example_data/snp_metrics/Sample_1104,280,0.6978865000000001
-Sample_1539,1.0,1,EUR,example_data/snp_metrics/Sample_1539,315,0.6942980000000001
-Sample_2379,0.8158886,1,MDE,example_data/snp_metrics/Sample_2379,328,0.64546
-Sample_1735,0.947724,1,EUR,example_data/snp_metrics/Sample_1735,286,0.680299
+2231_1431,0.8158814,1,MDE,example_data/snp_metrics/2231/2231_1431/chromosome=6,328,0.64546
+2231_2180,1.0,1,EUR,example_data/snp_metrics/2231/2231_2180/chromosome=6,315,0.6942980000000001
+2231_1069,1.0,1,EUR,example_data/snp_metrics/2231/2231_1069/chromosome=6,280,0.6978865000000001
+2231_1220,0.9125407,1,EUR,example_data/snp_metrics/2231/2231_1220/chromosome=6,224,0.5523075000000001
+2231_1170,0.9467031,1,EUR,example_data/snp_metrics/2231/2231_1170/chromosome=6,287,0.680299

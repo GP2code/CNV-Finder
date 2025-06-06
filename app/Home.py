@@ -43,7 +43,7 @@ def generate_sample(cohort_samples):
 
 def plot_sample():
     """
-    Plots various scatter plots for LogRRatio and BAlleleFreq visualizations
+    Plots various scatter plots for LRR and BAF visualizations
     for a selected sample.
 
     Arguments:
@@ -58,55 +58,55 @@ def plot_sample():
     sample_df_interval['ALT_pred'].fillna('<None>', inplace=True)
     pred_cnv = sample_df_interval[sample_df_interval['CNV_call'] == 1]
 
-    # Plot variants in CNV ranges only (LogRRatio vs. Position in base pairs)
+    # Plot variants in CNV ranges only (LRR vs. POS in base pairs)
     fig_lrr = plot_variants(
             pred_cnv[pred_cnv['ALT_pred'] != '<INS>'], 
-            x_col='position',
-            y_col='LogRRatio',
+            x_col='POS',
+            y_col='LRR',
             gtype_col='ALT_pred',
             title=f'{st.session_state["gene_choice"]} Interval CNV Predictions Only'
     )
-    xmin, xmax = pred_cnv['position'].min(), pred_cnv['position'].max()
+    xmin, xmax = pred_cnv['POS'].min(), pred_cnv['POS'].max()
     st.plotly_chart(fig_lrr)
 
-    # Plot variants in CNV ranges only (BAlleleFreq vs. Position in base pairs)
+    # Plot variants in CNV ranges only (BAF vs. POS in base pairs)
     fig_baf = plot_variants(
             pred_cnv[pred_cnv['ALT_pred'] == '<INS>'],
-            x_col='position',
-            y_col='BAlleleFreq',
+            x_col='POS',
+            y_col='BAF',
             gtype_col='ALT_pred',
             title=f'{st.session_state["gene_choice"]} Interval CNV Predictions Only',
             xmin=xmin, xmax=xmax
     )
     st.plotly_chart(fig_baf)
 
-    # Plot all variants color-coded by CNV Type (LogRRatio)
+    # Plot all variants color-coded by CNV Type (LRR)
     fig_lrr_full = plot_variants(
                 sample_df_interval[sample_df_interval['ALT_pred'] != '<INS>'],
-                x_col='position',
-                y_col='LogRRatio',
+                x_col='POS',
+                y_col='LRR',
                 gtype_col='ALT_pred',
                 title=f'{st.session_state["gene_choice"]} Interval Colored by CNV Type',
                 xmin=xmin, xmax=xmax
     )
     st.plotly_chart(fig_lrr_full)
 
-    # Plot all variants color-coded by CNV Type (BAlleleFreq)
+    # Plot all variants color-coded by CNV Type (BAF)
     fig_baf_full = plot_variants(
                 sample_df_interval[(sample_df_interval['ALT_pred'] != '<DEL>') & (sample_df_interval['ALT_pred'] != '<DUP>')],
-                x_col='position',
-                y_col='BAlleleFreq',
+                x_col='POS',
+                y_col='BAF',
                 gtype_col='ALT_pred',
                 title=f'{st.session_state["gene_choice"]} Interval Colored by CNV Type',
                 xmin=xmin, xmax=xmax
     )
     st.plotly_chart(fig_baf_full)
 
-    # Plot all variants in black & white with average line (LogRRatio)
+    # Plot all variants in black & white with average line (LRR)
     bw_lrr_full = plot_variants(
                 sample_df_interval,
-                x_col='position',
-                y_col='LogRRatio',
+                x_col='POS',
+                y_col='LRR',
                 gtype_col=None,
                 midline=True,
                 title=f'All Variants in {st.session_state["gene_choice"]} Interval with Average Line',
@@ -115,11 +115,11 @@ def plot_sample():
     )
     st.plotly_chart(bw_lrr_full)
 
-    # Plot all variants in black & white (BAlleleFreq)
+    # Plot all variants in black & white (BAF)
     bw_baf_full = plot_variants(
                 sample_df_interval,
-                x_col='position',
-                y_col='BAlleleFreq',
+                x_col='POS',
+                y_col='BAF',
                 gtype_col=None,
                 title=f'All Variants in {st.session_state["gene_choice"]} Interval',
                 opacity=0.3,
@@ -127,16 +127,16 @@ def plot_sample():
     )
     st.plotly_chart(bw_baf_full)
 
-    # If want to add plot that highlights variants within specific position range
+    # If want to add plot that highlights variants within specific POS range
     # start_p = 28740088
     # stop_p = 28767112
-    # true_pos = sample_df_interval[(sample_df_interval['position'] >= start_p) & (sample_df_interval['position'] <= stop_p)]
-    # remaining = sample_df_interval[~((sample_df_interval['position'] >= start_p) & (sample_df_interval['position'] <= stop_p))]
+    # true_pos = sample_df_interval[(sample_df_interval['POS'] >= start_p) & (sample_df_interval['POS'] <= stop_p)]
+    # remaining = sample_df_interval[~((sample_df_interval['POS'] >= start_p) & (sample_df_interval['POS'] <= stop_p))]
 
     # bw_lrr_full = plot_variants(
     #             remaining,
-    #             x_col='position',
-    #             y_col='LogRRatio',
+    #             x_col='POS',
+    #             y_col='LRR',
     #             gtype_col = None,
     #             title=f'All Variants in {st.session_state["gene_choice"]} Interval with Confirmed Deletion',
     #             opacity=0.3,
@@ -147,8 +147,8 @@ def plot_sample():
 
     # bw_baf_full = plot_variants(
     #             remaining,
-    #             x_col='position',
-    #             y_col='BAlleleFreq',
+    #             x_col='POS',
+    #             y_col='BAF',
     #             gtype_col = None,
     #             title=f'All Variants in {st.session_state["gene_choice"]} Interval with Confirmed Deletion',
     #             opacity=0.3,
