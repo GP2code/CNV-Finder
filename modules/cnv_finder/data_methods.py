@@ -1,9 +1,11 @@
 import os
+import shutil
 import random
 import pandas as pd
 import numpy as np
 import plotly.express as px
 from scipy.stats import iqr
+
 
 # Supress Pandas copy warning
 pd.options.mode.chained_assignment = None
@@ -47,6 +49,32 @@ def check_interval(interval_name, interval_file='ref_files/glist_hg38_intervals.
         new_intervals.to_csv(f'{interval_dir}/custom_intervals.csv', mode='a')
 
     return chrom, start_pos, stop_pos
+
+def merge_samples(tmp_dir, out_path):
+    # Collect all file paths ending in .csv
+    csv_files = [os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if f.endswith(".csv")]
+    
+    # Read and concatenate
+    df_all = pd.concat([pd.read_csv(f) for f in csv_files], ignore_index=False)
+    
+    # Save to output path
+    df_all.to_csv(f'{out_path}_samples_windows.csv', index=False)
+
+    # Remove tmp directory
+    shutil.rmtree(tmp_dir)
+
+def subset_metadata(metadata_path, chrom, start, stop, buffer, min_gentrain=0.2):
+    ### Add functionality to input PLINK files for QC
+    metadata = pd.read_parquet(f'{metadata_path}/CHROM={chrom}')
+
+    snp_info = metadata[['snpID', 'POS', 'GenTrain_Score']][(
+        metadata['POS'] >= (start - buffer)) & (metadata['POS'] <= (stop + buffer))]
+
+    exclude_snps = snp_info[snp_info.GenTrain_Score.astype(
+        float) <= min_gentrain].snpID.unique()
+    snp_info = snp_info[~snp_info.snpID.isin(exclude_snps)][['snpID', 'POS']]
+
+    return snp_info
 
 
 def create_overlapping_windows(data, window_size, num_intervals):
@@ -102,8 +130,8 @@ def mean_within_interval(row, col_name, df):
     float: The mean value of the specified column within the interval. 
            Returns NaN if no data points fall within the interval.
     """
-    interval_mask = (df['position'] >= row['START']) & (
-        df['position'] <= row['STOP'])
+    interval_mask = (df['POS'] >= row['START']) & (
+        df['POS'] <= row['STOP'])
     return df.loc[interval_mask, col_name].mean()
 
 
@@ -122,8 +150,8 @@ def iqr_within_interval(row, col_name, df):
     float: The IQR of the specified column within the interval. 
            Returns NaN if no data points fall within the interval.
     """
-    interval_mask = (df['position'] >= row['START']) & (
-        df['position'] <= row['STOP'])
+    interval_mask = (df['POS'] >= row['START']) & (
+        df['POS'] <= row['STOP'])
     return iqr(df.loc[interval_mask, col_name], interpolation='midpoint')
 
 
@@ -142,8 +170,8 @@ def std_within_interval(row, col_name, df):
     float: The standard deviation of the specified column within the interval. 
            Returns NaN if no data points fall within the interval.
     """
-    interval_mask = (df['position'] >= row['START']) & (
-        df['position'] <= row['STOP'])
+    interval_mask = (df['POS'] >= row['START']) & (
+        df['POS'] <= row['STOP'])
     return df.loc[interval_mask, col_name].std()
 
 
@@ -165,8 +193,8 @@ def dosage_full(row, col_name, df):
     float: The dosage value of the specified column within the interval. 
            Returns 0 if the DataFrame is empty or no data points fall within the interval.
     """
-    interval_mask = (df['position'] >= row['START']) & (
-        df['position'] <= row['STOP'])
+    interval_mask = (df['POS'] >= row['START']) & (
+        df['POS'] <= row['STOP'])
     calls = sum(df.loc[interval_mask, col_name])
 
     # Catches potential division by zero error
@@ -186,7 +214,7 @@ def create_train_set():
     pass
 
 
-def create_test_set(master_key, num_samples, training_file, snp_metrics_path, out_path, study_name='all', interval_name=None):
+def create_test_set(master_key, num_samples, training_file, snp_metrics_path, out_path, chrom, study_name='all', interval_name=None):
     """
     Creates a test set from a master key file by selecting samples that do not overlap with an existing training set.
     This function can filter samples based on a specified study or cohort name and checks for the 
@@ -208,7 +236,7 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
 
     # Read the master key file
     if master_key.endswith('.txt'):
-        master = pd.read_csv(master_key, sep='\s+')
+        master = pd.read_csv(master_key, sep='\t', low_memory = False)
     elif master_key.endswith('.csv'):
         master = pd.read_csv(master_key)
 
@@ -232,7 +260,7 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
 
     # Select a subset of non-overlapping samples for the test set
     k = min(len(open_ids), num_samples)
-    test_filenames = random.sample(set(open_ids.IID), k=k)
+    test_filenames = random.sample(sorted(open_ids.IID), k=k)
 
     # Create a DataFrame for the test set
     if 'label' in master.columns:
@@ -249,8 +277,9 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
     # Verify existence of SNP metrics for each sample
     for i in range(len(test_set)):
         sample = test_set.IID.iloc[i]
+        code = sample.split('_')[0]
 
-        mfile1 = f'{snp_metrics_path}/{sample}'
+        mfile1 = f'{snp_metrics_path}/{code}/{sample}/chromosome={chrom}'
 
         if os.path.isdir(mfile1):
             test_set['snp_metrics_path'].iloc[i] = mfile1
@@ -336,58 +365,40 @@ def fill_window_df(sample_data):
           like 'avg_baf', 'std_lrr', and 'iqr_baf'. The CSV file also includes an 
           identifier for CNV presence and basic sample metadata.
     """
-    out_path, sample, snp_metrics_file, split_interval, total_windows, cnv_exists, chrom, start, stop, buffer, min_gentrain, bim_file, pvar_file = sample_data
-    window_df = make_window_df(start, stop, split_interval, total_windows, buffer)
+    out_path, sample, snp_metrics_file, snp_info, split_interval, total_windows, cnv_exists, chrom, start, stop, buffer, min_gentrain, bim_file, pvar_file = sample_data
+    window_df = make_window_df(
+        start, stop, split_interval, total_windows, buffer)
     metrics_df = pd.read_parquet(snp_metrics_file)
 
-    # Check and filter using BIM or PVAR files if provided
-    if bim_file or pvar_file:
-        if os.path.isfile(bim_file):
-            bim = pd.read_csv(bim_file, sep='\s+', header=None,
-                              names=['chr', 'id', 'pos', 'bp', 'a1', 'a2'], usecols=['id'])
-            sample_df = metrics_df.loc[(metrics_df.snpID.isin(bim.id)) & (
-                metrics_df.GenTrain_Score >= min_gentrain)]
-        elif os.path.isfile(pvar_file):
-            pvar = pd.read_csv(pvar_file, sep='\s+', header=None,
-                               names=['#CHROM', 'POS', 'ID', 'REF', 'ALT'], usecols=['ID'])
-            sample_df = metrics_df.loc[(metrics_df.snpID.isin(pvar.ID)) & (
-                metrics_df.GenTrain_Score >= min_gentrain)]
-    elif 'GenTrain_Score' in metrics_df.columns:
-        sample_df = metrics_df.loc[(metrics_df.GenTrain_Score >= min_gentrain)]
-
-    # Filter data within the specified chromosome and interval
-    sample_df_interval = sample_df[['snpID', 'chromosome', 'position', 'BAlleleFreq', 'LogRRatio']][
-        (sample_df['chromosome'] == chrom) & 
-        (sample_df['position'] >= (start - buffer)) & 
-        (sample_df['position'] <= (stop + buffer))
-    ]
+    # Filter data to included SNPs
+    sample_interval = metrics_df.merge(snp_info, on='snpID', how='inner')
 
     # Identify CNV types based on BAF and LRR thresholds
-    sample_df_interval['BAF_insertion'] = np.where((sample_df_interval['BAlleleFreq'].between(
-        0.65, 0.85, inclusive='neither')) | (sample_df_interval['BAlleleFreq'].between(0.15, 0.35, inclusive='neither')), 1, 0)
-    sample_df_interval['L2R_deletion'] = np.where(
-        sample_df_interval['LogRRatio'] < -0.2, 1, 0)
-    sample_df_interval['L2R_duplication'] = np.where(
-        sample_df_interval['LogRRatio'] > 0.2, 1, 0)
-    sample_df_interval['BAF_middle'] = np.where((sample_df_interval['BAlleleFreq'] >= 0.15) & (
-        sample_df_interval['BAlleleFreq'] <= 0.85), 1, 0)
+    sample_interval['BAF_insertion'] = np.where((sample_interval['BAF'].between(
+        0.65, 0.85, inclusive='neither')) | (sample_interval['BAF'].between(0.15, 0.35, inclusive='neither')), 1, 0)
+    sample_interval['L2R_deletion'] = np.where(
+        sample_interval['LRR'] < -0.2, 1, 0)
+    sample_interval['L2R_duplication'] = np.where(
+        sample_interval['LRR'] > 0.2, 1, 0)
+    sample_interval['BAF_middle'] = np.where((sample_interval['BAF'] >= 0.15) & (
+        sample_interval['BAF'] <= 0.85), 1, 0)
 
-    sample_df_interval['ALT_pred'] = np.where(sample_df_interval['BAF_insertion'] == 1, '<INS>',
-                                    np.where(sample_df_interval['L2R_deletion'] == 1, '<DEL>',
-                                    np.where(sample_df_interval['L2R_duplication'] == 1, '<DUP>', '')))
-    sample_df_interval['CNV_call'] = np.where(sample_df_interval['ALT_pred'] == '', 0,
-                                    np.where(sample_df_interval['ALT_pred'] != '', 1, ''))
+    sample_interval['ALT_pred'] = np.where(sample_interval['BAF_insertion'] == 1, '<INS>',
+                                    np.where(sample_interval['L2R_deletion'] == 1, '<DEL>',
+                                    np.where(sample_interval['L2R_duplication'] == 1, '<DUP>', '')))
+    sample_interval['CNV_call'] = np.where(sample_interval['ALT_pred'] == '', 0,
+                                    np.where(sample_interval['ALT_pred'] != '', 1, ''))
 
     # Extract CNV candidates
-    pred_cnv = sample_df_interval[sample_df_interval['CNV_call'] == '1']
+    pred_cnv = sample_interval[sample_interval['CNV_call'] == '1']
 
     # Calculate window-level metrics for ML features
-    sample_df_interval = sample_df_interval.astype(
-        {'BAlleleFreq': 'float', 'LogRRatio': 'float', 'CNV_call': 'int'})
+    sample_interval = sample_interval.astype(
+        {'BAF': 'float', 'LRR': 'float', 'CNV_call': 'int'})
     pred_cnv = pred_cnv.astype(
-        {'BAlleleFreq': 'float', 'LogRRatio': 'float', 'CNV_call': 'int'})
+        {'BAF': 'float', 'LRR': 'float', 'CNV_call': 'int'})
     window_df['dosage_interval'] = window_df.apply(
-        lambda row: mean_within_interval(row, 'CNV_call', sample_df_interval), axis=1)
+        lambda row: mean_within_interval(row, 'CNV_call', sample_interval), axis=1)
     window_df['dosage_full'] = window_df.apply(
         lambda row: dosage_full(row, 'CNV_call', pred_cnv), axis=1)
 
@@ -406,25 +417,25 @@ def fill_window_df(sample_data):
         lambda row: mean_within_interval(row, 'BAF_insertion', pred_cnv), axis=1)
 
     window_df['avg_baf'] = window_df.apply(
-        lambda row: mean_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+        lambda row: mean_within_interval(row, 'BAF', pred_cnv), axis=1)
     window_df['avg_mid_baf'] = window_df.apply(lambda row: mean_within_interval(
-        row, 'BAlleleFreq', sample_df_interval[sample_df_interval['BAF_middle'] == 1]), axis=1)
+        row, 'BAF', sample_interval[sample_interval['BAF_middle'] == 1]), axis=1)
     window_df['avg_lrr'] = window_df.apply(
-        lambda row: mean_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
+        lambda row: mean_within_interval(row, 'LRR', pred_cnv), axis=1)
 
     window_df['std_baf'] = window_df.apply(
-        lambda row: std_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+        lambda row: std_within_interval(row, 'BAF', pred_cnv), axis=1)
     window_df['std_mid_baf'] = window_df.apply(lambda row: std_within_interval(
-        row, 'BAlleleFreq', sample_df_interval[sample_df_interval['BAF_middle'] == 1]), axis=1)
+        row, 'BAF', sample_interval[sample_interval['BAF_middle'] == 1]), axis=1)
     window_df['std_lrr'] = window_df.apply(
-        lambda row: std_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
+        lambda row: std_within_interval(row, 'LRR', pred_cnv), axis=1)
 
     window_df['iqr_baf'] = window_df.apply(
-        lambda row: iqr_within_interval(row, 'BAlleleFreq', pred_cnv), axis=1)
+        lambda row: iqr_within_interval(row, 'BAF', pred_cnv), axis=1)
     window_df['iqr_mid_baf'] = window_df.apply(lambda row: iqr_within_interval(
-        row, 'BAlleleFreq', sample_df_interval[sample_df_interval['BAF_middle'] == 1]), axis=1)
+        row, 'BAF', sample_interval[sample_interval['BAF_middle'] == 1]), axis=1)
     window_df['iqr_lrr'] = window_df.apply(
-        lambda row: iqr_within_interval(row, 'LogRRatio', pred_cnv), axis=1)
+        lambda row: iqr_within_interval(row, 'LRR', pred_cnv), axis=1)
 
     # Additional metadata and final formatting
     window_df['cnv_range_count'] = len(pred_cnv)
@@ -435,7 +446,9 @@ def fill_window_df(sample_data):
     window_df['window'] = window_df.index
     window_df['CNV_exists'] = cnv_exists
 
-    window_df.to_csv(f'{out_path}_samples_windows.csv', mode='a', header=None, index=False)
+    # window_df.to_csv(f'{out_path}_samples_windows.csv',
+    #                  mode='a', header=None, index=False)
+    window_df.to_csv(f'{out_path}/{sample}_windows.csv', index=False)
 
 
 def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out_path, prob_threshold=0.8):
@@ -482,6 +495,7 @@ def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out
     return above_probab
 
 
+# FIX
 def generate_pred_cnvs(sample_data):
     """
     Generates files for samples with predicted CNVs for future plots in the Streamlit app.
@@ -501,64 +515,45 @@ def generate_pred_cnvs(sample_data):
 
     Returns:
     None: Outputs a CSV file with columns such as 'snpID', 'chromosome', 'position', 
-          'BAlleleFreq', 'LogRRatio', and predicted CNV types ('ALT_pred', 'CNV_call').
+          'BAF', 'LRR', and predicted CNV types ('ALT_pred', 'CNV_call').
     """
-    sample, metrics, chrom, start, stop, out_path, buffer, min_gentrain, bim_file, pvar_file = sample_data
+    sample, metrics, snp_info, chrom, start, stop, out_path, buffer, min_gentrain, bim_file, pvar_file = sample_data
     out_dir = os.path.dirname(os.path.abspath(out_path))
-
-    sample = metrics.split('/')[-1].split('=')[-1]
-
+    
     metrics_df = pd.read_parquet(metrics)
 
-    # Filter using BIM or PVAR files if provided
-    if bim_file or pvar_file:
-        if os.path.isfile(bim_file):
-            bim = pd.read_csv(bim_file, sep='\s+', header=None,
-                              names=['chr', 'id', 'pos', 'bp', 'a1', 'a2'], usecols=['id'])
-            sample_df = metrics_df.loc[(metrics_df.snpID.isin(bim.id)) & (
-                metrics_df.GenTrain_Score >= min_gentrain)]
-        elif os.path.isfile(pvar_file):
-            pvar = pd.read_csv(pvar_file, sep='\s+', header=None,
-                               names=['#CHROM', 'POS', 'ID', 'REF', 'ALT'], usecols=['ID'])
-            sample_df = metrics_df.loc[(metrics_df.snpID.isin(pvar.ID)) & (
-                metrics_df.GenTrain_Score >= min_gentrain)]
-    elif 'GenTrain_Score' in metrics_df.columns:
-        sample_df = metrics_df.loc[(metrics_df.GenTrain_Score >= min_gentrain)]
-
-    # Filter data within the specified chromosome and interval
-    sample_df_interval = sample_df[['snpID', 'chromosome', 'position', 'BAlleleFreq', 'LogRRatio']][(sample_df['chromosome'] == chrom)
-                                                                                                    & (sample_df['position'] >= (start-buffer))
-                                                                                                    & (sample_df['position'] <= (stop+buffer))]
+    # Filter data to included SNPs
+    sample_interval = metrics_df.merge(snp_info, on='snpID', how='inner')
 
     # Identify CNV types based on BAF and LRR thresholds
-    sample_df_interval['BAF_insertion'] = np.where((sample_df_interval['BAlleleFreq'].between(
-        0.65, 0.85, inclusive='neither')) | (sample_df_interval['BAlleleFreq'].between(0.15, 0.35, inclusive='neither')), 1, 0)
-    sample_df_interval['L2R_deletion'] = np.where(
-        sample_df_interval['LogRRatio'] < -0.2, 1, 0)
-    sample_df_interval['L2R_duplication'] = np.where(
-        sample_df_interval['LogRRatio'] > 0.2, 1, 0)
+    sample_interval['BAF_insertion'] = np.where((sample_interval['BAF'].between(
+        0.65, 0.85, inclusive='neither')) | (sample_interval['BAF'].between(0.15, 0.35, inclusive='neither')), 1, 0)
+    sample_interval['L2R_deletion'] = np.where(
+        sample_interval['LRR'] < -0.2, 1, 0)
+    sample_interval['L2R_duplication'] = np.where(
+        sample_interval['LRR'] > 0.2, 1, 0)
 
-    sample_df_interval['ALT_pred'] = np.where(sample_df_interval['BAF_insertion'] == 1, '<INS>',
-                                              np.where(sample_df_interval['L2R_deletion'] == 1, '<DEL>',
-                                                       np.where(sample_df_interval['L2R_duplication'] == 1, '<DUP>', '')))
-    sample_df_interval['CNV_call'] = np.where(sample_df_interval['ALT_pred'] == '', 0,
-                                              np.where(sample_df_interval['ALT_pred'] != '', 1, ''))
+    sample_interval['ALT_pred'] = np.where(sample_interval['BAF_insertion'] == 1, '<INS>',
+                                           np.where(sample_interval['L2R_deletion'] == 1, '<DEL>',
+                                                    np.where(sample_interval['L2R_duplication'] == 1, '<DUP>', '')))
+    sample_interval['CNV_call'] = np.where(sample_interval['ALT_pred'] == '', 0,
+                                           np.where(sample_interval['ALT_pred'] != '', 1, ''))
 
     # Save the results to a CSV file in the 'pred_cnvs' directory
     pred_path = f'{out_dir}/pred_cnvs'
     os.makedirs(pred_path, exist_ok=True)
-    sample_df_interval.to_csv(
+    sample_interval.to_csv(
         f'{pred_path}/{sample}_full_interval.csv', index=False)
 
 
-def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', title='snp plot', opacity=1, midline=False, cnvs=None, xmin=None, xmax=None):
+def plot_variants(df, x_col='BAF', y_col='LRR', gtype_col='GT', title='snp plot', opacity=1, midline=False, cnvs=None, xmin=None, xmax=None):
     """
     Plots an interactive scatter plot of genetic variants with customizable axes, colors, and features.
 
     Arguments:
     df (pandas.DataFrame): The DataFrame containing the data to be plotted.
-    x_col (str, optional): The column name for the x-axis. Defaults to 'BAlleleFreq'.
-    y_col (str, optional): The column name for the y-axis. Defaults to 'LogRRatio'.
+    x_col (str, optional): The column name for the x-axis. Defaults to 'BAF'.
+    y_col (str, optional): The column name for the y-axis. Defaults to 'LRR'.
     gtype_col (str, optional): The column name used for coloring the points. Defaults to 'GT'.
     title (str, optional): The title of the plot. Defaults to 'snp plot'.
     opacity (float, optional): The opacity level of the points (0 to 1). Defaults to 1.
@@ -595,7 +590,7 @@ def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', ti
     xlim = [xmin-.1, xmax+.1]
     ylim = [ymin-.1, ymax+.1]
 
-    lmap = {'BAlleleFreq': 'BAF', 'LogRRatio': 'LRR'}
+    lmap = {'BAF': 'BAF', 'LRR': 'LRR'}
     smap = {'Control': 'circle', 'PD': 'diamond-open-dot'}
 
     # Choose color map based on genotype column

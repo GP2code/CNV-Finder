@@ -1,7 +1,7 @@
 import argparse
 import multiprocessing
 import pandas as pd
-from cnv_finder.data_methods import check_interval, create_app_ready_file, generate_pred_cnvs
+from cnv_finder.data_methods import check_interval, subset_metadata, create_app_ready_file, generate_pred_cnvs
 
 
 def main():
@@ -21,6 +21,7 @@ def main():
                         help='Kilobase window around each interval, in bases.')
     parser.add_argument('--min_gentrain', type=float,
                         default=0.2, help='Minimum GenTrain Score threshold.')
+    parser.add_argument('--metadata_path', type=str, default='ref_files/NBA_metadata', help='Repeated SNP metadata')
     parser.add_argument('--bim_file', type=str, default=None,
                         help='PLINK .bim file following sample QC.')
     parser.add_argument('--pvar_file', type=str, default=None,
@@ -51,6 +52,7 @@ def main():
     stop_pos = args.stop
     buffer = args.buffer
     min_gentrain = args.min_gentrain
+    metadata_path = args.metadata_path
     bim = args.bim_file
     pvar = args.pvar_file
     test_set_ids = args.test_set_ids
@@ -67,6 +69,10 @@ def main():
         if not chrom or not start_pos or not stop_pos:
             print('Interval name not found in interval reference file. Please enter a new interval name or manually enter chromosome with start and stop base pair positions for interval of interest.')
 
+    # Subsets metadata file for relevant info
+    if metadata_path:
+        snp_info = subset_metadata(metadata_path, chrom, start_pos, stop_pos, buffer, min_gentrain)
+
     # Prepares app-ready files for samples with predicted values above a specified threshold
     if app_ready:
         above_probab = create_app_ready_file(
@@ -74,7 +80,7 @@ def main():
 
         # Parallelizes the file creation process
         with multiprocessing.Pool(cpus) as pool:
-            pool.map(generate_pred_cnvs, [(row.IID, row.snp_metrics_path, chrom, start_pos, stop_pos,
+            pool.map(generate_pred_cnvs, [(row.IID, row.snp_metrics_path, snp_info, chrom, start_pos, stop_pos,
                      out_path, buffer, min_gentrain, bim, pvar) for index, row in above_probab.iterrows()])
 
 
