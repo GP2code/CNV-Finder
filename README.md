@@ -79,4 +79,4 @@ CNV_finder/
 ## Software
 |               Software              |      Version(s)     |                       Resource URL                       |       RRID      |                                               Notes                                               |
 |:-----------------------------------:|:-------------------:|:--------------------------------------------------------:|:---------------:|:-------------------------------------------------------------------------------------------------:|
-|               Python Programming Language              |      3.9     |        http://www.python.org/        | RRID:SCR_008394 |                Refer to requirements.txt for necessary packages                |
+|               Python Programming Language              |      3.9.16     |        http://www.python.org/        | RRID:SCR_008394 |                Refer to requirements.txt for necessary packages                |
