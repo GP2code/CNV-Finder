@@ -27,7 +27,7 @@ pip install -r requirements.txt
 ````
 
 ## Running the Pipeline
-Open the `run_pipeline.ipynb` notebook and sequentially run through each cell to perform the 3 major processes in the pipeline: ML data preprocessing, application of pre-trained models/training new models on the prepared data, and the creation of app-ready files for visualizations in the CNV-Finder app. If HPC is unavailable, run the commands defined as "cmd" in the terminal. 
+Open the `run_pipeline.ipynb` notebook and sequentially run through each cell to perform the 3 major processes in the pipeline: ML data preprocessing, application of pre-trained models/training new models on the prepared data, and the creation of app-ready files for visualizations in the CNV-Finder app.
 
 ### Available Parameters
 For a more in-depth guide to the parameters available for each process, please read through the following documentation: `docs/parameter_guide.md`. 
