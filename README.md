@@ -65,6 +65,7 @@ CNV_finder/
 │   │   ├── updated_dup_10_70_combo6_lstm.keras
 │   │   ├── prelim_del_5_50_combo4_lstm.keras
 │   │   └── prelim_dup_10_70_combo6_lstm.keras
+│   ├── NBA_metadata/
 │   ├── custom_intervals.csv
 │   ├── glist_hg38_interval.csv
 │   └── training_set_IDs.csv
