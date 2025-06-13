@@ -1,4 +1,13 @@
-# CNV-Finder
+# CNV-Finder: Alternate Version
+
+## Differences from the 'main' Branch Version
+1. _Data Prep_
+
+During the data preparation step, the original version of CNV-Finder appends all sample info to the same model-ready output file as it runs. This version creates a temporary directory to hold processed files per sample until all IDs are prepared, before concatenating into one output file and deleting the temporary directory. Our new approach runs successfully on platforms such as Google Cloud when mounting to a data bucket.
+
+2. _Example Data_
+
+This version demonstrates efficient methods for storing and accessing SNP metrics files that mimic those from GP2 releases. We also introduce NBA Metadata parquets that hold consistent information per SNP IDs, such as chromosomal position and GenTrain score, to prevent unnecessary repetition of data.
  
 ## Overview
 CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on SNP array data to expedite large-scale identification of CNVs within predefined genomic regions. Manuscript coming soon!
@@ -12,6 +21,14 @@ git clone https://github.com/nvk23/CNV-Finder.git
 cd CNV-Finder
 ````
 
+### [Optional] Create a Conda environment:
+
+````
+conda create -n "cnv_finder" python=3.9.16 ipython
+
+conda activate cnv_finder
+````
+
 ### Install the required packages:
 
 ````
@@ -19,7 +36,7 @@ pip install -r requirements.txt
 ````
 
 ## Running the Pipeline
-Open the `run_pipeline.ipynb` notebook and sequentially run through each cell to perform the 3 major processes in the pipeline: ML data preprocessing, application of pre-trained models/training new models on the prepared data, and the creation of app-ready files for visualizations in the CNV-Finder app. If HPC is unavailable, run the commands defined as "cmd" in the terminal. 
+Open the `run_pipeline.ipynb` notebook and sequentially run through each cell to perform the 3 major processes in the pipeline: ML data preprocessing, application of pre-trained models/training new models on the prepared data, and the creation of app-ready files for visualizations in the CNV-Finder app.
 
 ### Available Parameters
 For a more in-depth guide to the parameters available for each process, please read through the following documentation: `docs/parameter_guide.md`. 
@@ -79,4 +96,4 @@ CNV_finder/
 ## Software
 |               Software              |      Version(s)     |                       Resource URL                       |       RRID      |                                               Notes                                               |
 |:-----------------------------------:|:-------------------:|:--------------------------------------------------------:|:---------------:|:-------------------------------------------------------------------------------------------------:|
-|               Python Programming Language              |      3.9     |        http://www.python.org/        | RRID:SCR_008394 |                Refer to requirements.txt for necessary packages                |
+|               Python Programming Language              |      3.9.16     |        http://www.python.org/        | RRID:SCR_008394 |                Refer to requirements.txt for necessary packages                |
