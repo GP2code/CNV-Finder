@@ -12,6 +12,14 @@ git clone https://github.com/nvk23/CNV-Finder.git
 cd CNV-Finder
 ````
 
+### [Optional] Create a Conda environment:
+
+````
+conda create -n "cnv_finder" python=3.9.16 ipython
+
+conda activate cnv_finder
+````
+
 ### Install the required packages:
 
 ````
