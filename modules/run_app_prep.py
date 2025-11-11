@@ -1,3 +1,4 @@
+import os
 import argparse
 import multiprocessing
 import pandas as pd
@@ -61,6 +62,10 @@ def main():
     probability = args.probability
     out_path = args.out_path
     app_ready = args.make_app_ready
+
+    # Creates directory for out_path if doesn't exist
+    out_dir = os.path.dirname(out_path)
+    os.makedirs(out_dir, exist_ok = True)
 
     # Finds the chromosome, start, and stop positions for a submitted interval name
     if interval_name:

@@ -83,6 +83,10 @@ def main():
     train_df = args.training_ids
     test_df = args.testing_ids
 
+    # Creates directory for out_path if doesn't exist
+    out_dir = os.path.dirname(out_path)
+    os.makedirs(out_dir, exist_ok = True)
+
     # Finds the chromosome, start, and stop positions for a submitted interval name
     if interval_name:
         chrom, start_pos, stop_pos = check_interval(
