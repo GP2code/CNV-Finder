@@ -1,10 +1,11 @@
 import os
+import subprocess
 import shutil
 import random
 import pandas as pd
 import numpy as np
 from scipy.stats import iqr
-
+from concurrent.futures import ThreadPoolExecutor
 
 # Supress Pandas copy warning
 pd.options.mode.chained_assignment = None
@@ -49,21 +50,48 @@ def check_interval(interval_name, interval_file='ref_files/glist_hg38_intervals.
 
     return chrom, start_pos, stop_pos
 
-def merge_samples(tmp_dir, out_path):
-    # Collect all file paths ending in .csv
-    csv_files = [os.path.join(tmp_dir, f) for f in os.listdir(tmp_dir) if f.endswith(".csv")]
-    
-    # Read and concatenate
-    df_all = pd.concat([pd.read_csv(f) for f in csv_files], ignore_index=False)
-    
-    # Save to output path
-    df_all.to_csv(f'{out_path}_samples_windows.csv', index=False)
+
+def merge_samples(tmp_dir, out_path, n_threads):
+    """
+    Merge individual sample files into a single output CSV across all samples.
+
+    Arguments:
+    tmp_dir (str): Path to temporary directory containing CSV files.
+    out_path (str): Output prefix for merged CSV.
+    n_threads (int): Number of threads to use for parallel reading.
+
+    Returns:
+    None: Outputs a CSV file with signal intensity values and model parameters
+        across all samples for split and window count of selected CNV type.
+    """
+    # Collect all CSV files
+    csv_files = [os.path.join(tmp_dir, f)
+                 for f in os.listdir(tmp_dir) if f.endswith(".csv")]
+    if not csv_files:
+        print("No CSV files found in tmp_dir.")
+        return
+
+    # Parallel read
+    def read_csv_safe(path):
+        return pd.read_csv(path)
+
+    with ThreadPoolExecutor(max_workers=n_threads) as executor:
+        dfs = list(executor.map(read_csv_safe, csv_files))
+
+    # Concatenate all DataFrames
+    df_all = pd.concat(dfs, ignore_index=True)
+
+    # Write output to disk
+    out_file = f"{out_path}_samples_windows.csv"
+    df_all.to_csv(out_file, index=False)
+    print(f"Merged {len(csv_files)} files into {out_file}")
 
     # Remove tmp directory
-    shutil.rmtree(tmp_dir)
+    subprocess.run(["rm", "-rf", tmp_dir], check=False)
+
 
 def subset_metadata(metadata_path, chrom, start, stop, buffer, min_gentrain=0.2):
-    ### Add functionality to input PLINK files for QC
+    # Add functionality to input PLINK files for QC
     metadata = pd.read_parquet(f'{metadata_path}/CHROM={chrom}')
 
     snp_info = metadata[['snpID', 'POS', 'GenTrain_Score']][(
@@ -235,7 +263,7 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
 
     # Read the master key file
     if master_key.endswith('.txt'):
-        master = pd.read_csv(master_key, sep='\t', low_memory = False)
+        master = pd.read_csv(master_key, sep='\t', low_memory=False)
     elif master_key.endswith('.csv'):
         master = pd.read_csv(master_key)
 
@@ -383,10 +411,10 @@ def fill_window_df(sample_data):
         sample_interval['BAF'] <= 0.85), 1, 0)
 
     sample_interval['ALT_pred'] = np.where(sample_interval['BAF_insertion'] == 1, '<INS>',
-                                    np.where(sample_interval['L2R_deletion'] == 1, '<DEL>',
-                                    np.where(sample_interval['L2R_duplication'] == 1, '<DUP>', '')))
+                                           np.where(sample_interval['L2R_deletion'] == 1, '<DEL>',
+                                                    np.where(sample_interval['L2R_duplication'] == 1, '<DUP>', '')))
     sample_interval['CNV_call'] = np.where(sample_interval['ALT_pred'] == '', 0,
-                                    np.where(sample_interval['ALT_pred'] != '', 1, ''))
+                                           np.where(sample_interval['ALT_pred'] != '', 1, ''))
 
     # Extract CNV candidates
     pred_cnv = sample_interval[sample_interval['CNV_call'] == '1']
@@ -518,7 +546,7 @@ def generate_pred_cnvs(sample_data):
     """
     sample, metrics, snp_info, chrom, start, stop, out_path, buffer, min_gentrain, bim_file, pvar_file = sample_data
     out_dir = os.path.dirname(os.path.abspath(out_path))
-    
+
     metrics_df = pd.read_parquet(metrics)
 
     # Filter data to included SNPs

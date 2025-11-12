@@ -119,7 +119,7 @@ def main():
             pool.map(fill_window_df, [(tmp_dir, row.IID, row.snp_metrics_path, snp_info, split_interval, total_windows, cnv_exists,
                      chrom, start_pos, stop_pos, buffer, min_gentrain, bim, pvar) for index, row in test_df.iterrows()])
 
-        merge_samples(tmp_dir, out_path)
+        merge_samples(tmp_dir, out_path, cpus)
 
     # Creates training set
     if create_train:
