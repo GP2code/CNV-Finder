@@ -478,7 +478,7 @@ def fill_window_df(sample_data):
     window_df.to_csv(f'{out_path}/{sample}_windows.csv', index=False)
 
 
-def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out_path, prob_threshold=0.8):
+def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, cnv_type, out_path, prob_threshold=0.8):
     """
     Creates an Streamlit-ready CSV file by merging and filtering test set outputs.
     It calculates the maximum IQR of LRR values, sums the number of CNVs in the region,
@@ -517,7 +517,7 @@ def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out
 
     # Filter samples based on the probability threshold
     above_probab = full_results[full_results['Pred Values'] >= prob_threshold]
-    above_probab.to_csv(f'{out_path}_app_ready.csv', index=False)
+    above_probab.to_csv(f'{out_path}_{cnv_type}_app_ready.csv', index=False)
 
     return above_probab
 

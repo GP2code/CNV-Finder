@@ -8,6 +8,8 @@ from cnv_finder.data_methods import check_interval, subset_metadata, create_app_
 def main():
     parser = argparse.ArgumentParser(
         description='Arguments for Running CNV-Finder App-Ready Data Prep.')
+    parser.add_argument('--cnv_type', type=str,
+                        default=None, help='Name for CNV type being investigated (del/dup).')
     parser.add_argument('--interval_name', type=str,
                         default=None, help='Name for NDD-related Gene region.')
     parser.add_argument('--interval_file', type=str, default='ref_files/glist_hg38_intervals.csv',
@@ -45,6 +47,7 @@ def main():
     # Define variables from argument flags
     args = parser.parse_args()
 
+    cnv_type = args.cnv_type
     interval_name = args.interval_name
     interval_file = args.interval_file
     cpus = args.cpus
@@ -81,7 +84,7 @@ def main():
     # Prepares app-ready files for samples with predicted values above a specified threshold
     if app_ready:
         above_probab = create_app_ready_file(
-            test_set_ids, test_set_windows, test_set_results, out_path, probability)
+            test_set_ids, test_set_windows, test_set_results, cnv_type, out_path, probability)
 
         # Parallelizes the file creation process
         with multiprocessing.Pool(cpus) as pool:
