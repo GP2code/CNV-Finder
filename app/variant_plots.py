@@ -79,7 +79,7 @@ def plot_variants(df, x_col='BAlleleFreq', y_col='LogRRatio', gtype_col='GT', ti
         # Create bins and calculate average y within each bin
         df['x_bin'] = pd.cut(df[x_col], bins=unique_x)
         grouped_df = df[[x_col, 'x_bin', y_col]].groupby(
-            'x_bin').mean().reset_index()
+            'x_bin', observed=True).mean().reset_index()
 
         # Plot the midline
         fig.add_traces(px.line(grouped_df, x=x_col, y=y_col).update_traces(

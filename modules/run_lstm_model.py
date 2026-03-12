@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--feature_names', type=str, nargs='*',
                         help='Add feature names for model training.')
     parser.add_argument('--model_file', type=str, default=None,
-                        help='Path to saved model file (.keras).')  # stil need to fix keras pkl issue
+                        help='Path to saved model file (.onnx).')
     parser.add_argument('--predict', action='store_true',
                         help="Generate prediction results with newly trained or input model.")
     parser.add_argument('--print_summary', action='store_true',
@@ -51,7 +51,7 @@ def main():
     # Use newly trained or pre-trained model to make predictions on reshaped test sets
     if predict:
         if train_model:
-            model_file = f'{out_path}_{X_train_reshaped.shape[1]}_windows.keras'
+            model_file = f'{out_path}_windows.onnx'
             print('Ready to predict using model:', model_file)
             model_predict(model_file, X_test_reshaped,
                           test_samples, out_path, model_summary)

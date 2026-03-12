@@ -3,6 +3,9 @@ import joblib
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+import onnxruntime as ort
+import tf2onnx
+import onnx
 
 # Supress Pandas copy warning
 pd.options.mode.chained_assignment = None
@@ -117,8 +120,18 @@ def train_binary_lstm(X_train_reshaped, y_train, out_path, verbosity=2, val_data
     history = binary_lstm_model.fit(X_train_reshaped, y_train, batch_size=32, epochs=20,
                                     verbose=verbosity, validation_data=val_data)
 
-    # Save the trained model in Keras format
-    binary_lstm_model.save(f'{out_path}_windows.keras')
+    # Save the trained model in Keras format (for backup)
+    keras_path = f'{out_path}_windows.keras'
+    binary_lstm_model.save(keras_path)
+    print(f"Model saved in Keras format: {keras_path}")
+
+    # Export to ONNX format for cross-platform compatibility
+    onnx_path = f'{out_path}_windows.onnx'
+    input_signature = [tf.TensorSpec(binary_lstm_model.inputs[0].shape,
+                                     binary_lstm_model.inputs[0].dtype, name='input')]
+    onnx_model, _ = tf2onnx.convert.from_keras(binary_lstm_model, input_signature, opset=13)
+    onnx.save(onnx_model, onnx_path)
+    print(f"Model exported to ONNX format: {onnx_path}")
 
     # Save model - currently keras.src module issue in HPC
     # pickle.dump(binary_lstm_model, open(f'{out_path}_windows.sav', 'wb'))
@@ -134,32 +147,38 @@ def model_predict(model_file, X_test_reshaped, test_samples, out_path, summary=T
     over a certain threshold.
 
     Arguments:
-    model_file (str): Path to the pre-trained model file (in Keras format).
-    X_test_reshaped (numpy.ndarray): The reshaped 3D array for test features with 
+    model_file (str): Path to the pre-trained model file (in ONNX format).
+    X_test_reshaped (numpy.ndarray): The reshaped 3D array for test features with
                                      dimensions (samples, time steps, features).
     test_samples (list): List of sample IDs corresponding to the test data.
     out_path (str): Path and filename (without extension) for saving the prediction results.
-    summary (bool, optional): Whether to print the model summary. Defaults to True.
+    summary (bool, optional): Whether to print model input/output info. Defaults to True.
 
     Returns:
-    None: Outputs a CSV file containing the test results, including predicted 
+    None: Outputs a CSV file containing the test results, including predicted
           values and an artifact warning if applicable.
     """
 
-    # Load in pre-trained model in Keras format
-    loaded_model = tf.keras.models.load_model(model_file)
+    # Load in pre-trained model in ONNX format
+    ort_session = ort.InferenceSession(model_file)
 
-    # Load in model - currently keras.src module issue in HPC
-    # loaded_model = pickle.load(file, 'rb')
-    # loaded_model = pd.read_pickle(model_file)
-    # loaded_model = joblib.load(open(model_file, 'rb'))
-
-    # Print model summary if required
+    # Print model input/output info if required
     if summary:
-        print(loaded_model.summary())
+        print("Model Inputs:")
+        for input_meta in ort_session.get_inputs():
+            print(f"  Name: {input_meta.name}, Shape: {input_meta.shape}, Type: {input_meta.type}")
+        print("Model Outputs:")
+        for output_meta in ort_session.get_outputs():
+            print(f"  Name: {output_meta.name}, Shape: {output_meta.shape}, Type: {output_meta.type}")
 
-    # Make predictions on the reshaped test set
-    model_predictions = loaded_model.predict(X_test_reshaped)
+    # Ensure input data is float32 (ONNX standard)
+    X_test_float32 = X_test_reshaped.astype(np.float32)
+
+    # Get input name from the model
+    input_name = ort_session.get_inputs()[0].name
+
+    # Make predictions on the reshaped test set using ONNX Runtime
+    model_predictions = ort_session.run(None, {input_name: X_test_float32})[0]
 
     # Reshape predictions and create a DataFrame with results
     results_reshaped = model_predictions.reshape(-1)

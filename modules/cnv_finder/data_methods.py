@@ -271,7 +271,7 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
         test_set = pd.DataFrame(test_set).reset_index(drop=True)
         test_set.columns = ['IID']
 
-    test_set['snp_metrics_path'] = 0
+    test_set['snp_metrics_path'] = ''
     remove = []
 
     # Verify existence of SNP metrics for each sample
@@ -282,7 +282,7 @@ def create_test_set(master_key, num_samples, training_file, snp_metrics_path, ou
         mfile1 = f'{snp_metrics_path}/{code}/{sample}/chromosome={chrom}'
 
         if os.path.isdir(mfile1):
-            test_set['snp_metrics_path'].iloc[i] = mfile1
+            test_set.loc[test_set.index[i], 'snp_metrics_path'] = mfile1
         else:
             remove.append(sample)  # remove these from test set
 
@@ -386,11 +386,10 @@ def fill_window_df(sample_data):
     sample_interval['ALT_pred'] = np.where(sample_interval['BAF_insertion'] == 1, '<INS>',
                                     np.where(sample_interval['L2R_deletion'] == 1, '<DEL>',
                                     np.where(sample_interval['L2R_duplication'] == 1, '<DUP>', '')))
-    sample_interval['CNV_call'] = np.where(sample_interval['ALT_pred'] == '', 0,
-                                    np.where(sample_interval['ALT_pred'] != '', 1, ''))
+    sample_interval['CNV_call'] = np.where(sample_interval['ALT_pred'] != '', 1, 0)
 
     # Extract CNV candidates
-    pred_cnv = sample_interval[sample_interval['CNV_call'] == '1']
+    pred_cnv = sample_interval[sample_interval['CNV_call'] == 1]
 
     # Calculate window-level metrics for ML features
     sample_interval = sample_interval.astype(
@@ -536,8 +535,7 @@ def generate_pred_cnvs(sample_data):
     sample_interval['ALT_pred'] = np.where(sample_interval['BAF_insertion'] == 1, '<INS>',
                                            np.where(sample_interval['L2R_deletion'] == 1, '<DEL>',
                                                     np.where(sample_interval['L2R_duplication'] == 1, '<DUP>', '')))
-    sample_interval['CNV_call'] = np.where(sample_interval['ALT_pred'] == '', 0,
-                                           np.where(sample_interval['ALT_pred'] != '', 1, ''))
+    sample_interval['CNV_call'] = np.where(sample_interval['ALT_pred'] != '', 1, 0)
 
     # Save the results to a CSV file in the 'pred_cnvs' directory
     pred_path = f'{out_dir}/pred_cnvs'
