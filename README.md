@@ -1,9 +1,9 @@
-# CNV-Finder: Alternate Version (Simplified Repo for Quicker Git Clone)
+# CNV-Finder: Keras Model Version (Simplified Repo for Quicker Git Clone)
 
 ## Differences from the 'main' Branch Version
-1. _Data Prep_
+1. _Keras Model Support Only_
 
-During the data preparation step, the original version of CNV-Finder appends all sample info to the same model-ready output file as it runs. This version creates a temporary directory to hold processed files per sample until all IDs are prepared, before concatenating into one output file and deleting the temporary directory. Our new approach runs successfully on platforms such as Google Cloud when mounting to a data bucket.
+This branch includes the code used for manuscript preparation with the original Keras models. We also removed the `example_data` folder to allow for quick Git cloning, as done in the Dockerfile.
  
 ## Overview
 CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on SNP array data to expedite large-scale identification of CNVs within predefined genomic regions. Manuscript coming soon!
