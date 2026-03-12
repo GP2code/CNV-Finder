@@ -494,7 +494,6 @@ def create_app_ready_file(test_set_id_path, test_set_path, test_result_path, out
     return above_probab
 
 
-# FIX
 def generate_pred_cnvs(sample_data):
     """
     Generates files for samples with predicted CNVs for future plots in the Streamlit app.
@@ -503,26 +502,38 @@ def generate_pred_cnvs(sample_data):
     sample_data (tuple): A tuple containing the following:
         - sample (str): Sample identifier.
         - metrics (str): Path to the file containing SNP metrics data in Parquet format.
+        - snp_info (pd.DataFrame): DataFrame with SNP metadata (snpID, POS columns).
         - chrom (str): Chromosome identifier.
         - start (int): The starting position of the interval.
         - stop (int): The stopping position of the interval.
         - out_path (str): Path for saving the output CSV.
         - buffer (int): Buffer size for extending the start and stop positions.
         - min_gentrain (float): Minimum GenTrain score threshold for filtering SNPs.
-        - bim_file (str or None): Path to a BIM file for filtering SNPs.
-        - pvar_file (str or None): Path to a PVAR file for filtering SNPs.
+        - bim_file (str or None): Path to a PLINK .bim file for filtering to QC'd SNPs.
+        - pvar_file (str or None): Path to a PLINK2 .pvar file for filtering to QC'd SNPs.
 
     Returns:
-    None: Outputs a CSV file with columns such as 'snpID', 'chromosome', 'position', 
+    None: Outputs a CSV file with columns such as 'snpID', 'chromosome', 'position',
           'BAF', 'LRR', and predicted CNV types ('ALT_pred', 'CNV_call').
     """
     sample, metrics, snp_info, chrom, start, stop, out_path, buffer, min_gentrain, bim_file, pvar_file = sample_data
     out_dir = os.path.dirname(os.path.abspath(out_path))
-    
+
     metrics_df = pd.read_parquet(metrics)
 
     # Filter data to included SNPs
     sample_interval = metrics_df.merge(snp_info, on='snpID', how='inner')
+
+    # Filter to QC'd SNPs using bim or pvar file if provided
+    if bim_file is not None:
+        bim_df = pd.read_csv(bim_file, sep='\t', header=None,
+                             names=['CHR', 'snpID', 'cM', 'POS', 'A1', 'A2'])
+        sample_interval = sample_interval[sample_interval['snpID'].isin(bim_df['snpID'])]
+    if pvar_file is not None:
+        pvar_df = pd.read_csv(pvar_file, sep='\t', comment='#',
+                              names=['#CHROM', 'POS', 'ID', 'REF', 'ALT'],
+                              usecols=['ID'])
+        sample_interval = sample_interval[sample_interval['snpID'].isin(pvar_df['ID'])]
 
     # Identify CNV types based on BAF and LRR thresholds
     sample_interval['BAF_insertion'] = np.where((sample_interval['BAF'].between(
