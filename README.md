@@ -1,9 +1,13 @@
-# CNV-Finder: Keras Model Version (Simplified Repo for Quicker Git Clone)
+# CNV-Finder: Keras Model Version
 
 ## Differences from the 'main' Branch Version
 1. _Keras Model Support Only_
 
-This branch includes the code used for manuscript preparation with the original Keras models. We also removed the `example_data` folder to allow for quick Git cloning, as done in the Dockerfile.
+This branch includes the code used for preprint/manuscript preparation with the original CNV-Finder modules and Keras models developed in Python 3.9.16.
+
+2. _Simplified Repo_
+
+All explanations walking through CNV-Finder, its app-related features, and using its respective example data and NBA metadata hosted on Hugging Face can be found on the `main branch`!
  
 ## Overview
 CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on SNP array data to expedite large-scale identification of CNVs within predefined genomic regions. Manuscript coming soon!
@@ -20,7 +24,7 @@ cd CNV-Finder
 ### [Optional] Create a Conda environment:
 
 ````
-conda create -n "cnv_finder" python=3.9.16 ipython
+conda create -n "cnv_finder" python=3.9.16
 
 conda activate cnv_finder
 ````
@@ -40,10 +44,6 @@ For a more in-depth guide to the parameters available for each process, please r
 ## Project Structure
 ```
 CNV_finder/
-├── app/
-│   ├── selections/
-│   ├── Home.py
-│   └── variant_plots.py
 │
 ├── modules/
 │   ├── cnv_finder/
@@ -66,26 +66,9 @@ CNV_finder/
 │   ├── glist_hg38_interval.csv
 │   └── training_set_IDs.csv
 │
-├── example_data/
-│   ├── snp_metrics/
-│   └── test_master_key.csv
-│
-├── testing/
-│   ├── app_ready/
-│   │   ├── cohort/
-│   │   │   ├── final_del_model/
-│   │   │   └── final_dup_model/
-│   ├── del/
-│   │   ├── cohort/
-│   │   │   └── gene/
-│   └── dup/
-│       └── cohort/
-│           └── gene/
-│
 ├── docs/
 │   └── parameter_guide.md
 │
-├── run_pipeline.ipynb
 ├── requirements.txt
 └── README.md
 ```
