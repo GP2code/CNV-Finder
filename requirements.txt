@@ -1,4 +1,5 @@
 fastparquet
+huggingface_hub
 ipykernel
 joblib
 numpy

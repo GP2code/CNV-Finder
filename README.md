@@ -16,9 +16,30 @@ We refer to these as **SNP (Single Nucleotide Polymorphism) metrics files**.
 
 SNP metrics can be extracted from microarray metadata files such as Illumina's IDAT format. If you're working with IDAT files, see the [SNP Metrics repository](https://github.com/nvk23/SNP_metrics/tree/main) for instructions on generating these files using Illumina's IAAP-CLI tool.
 
-### Optimizing Performance
+### Example Data
 
-For faster processing, we recommend using the Parquet format. Reference files are available in `example_data/snp_metrics`. To create this folder, unzip `example_data/snp_metrics_split` using `run_pipeline.ipynb`, which also includes code for loading and inspecting this data.
+Example SNP metrics files are hosted on Hugging Face. You can browse and download them here:
+
+**[CNV-Finder Dataset on Hugging Face](https://huggingface.co/datasets/nkuznet/CNV-Finder/tree/main)**
+
+These files can be used to test the pipeline end-to-end or as a reference for formatting your own input data. For faster processing, we recommend using the Parquet format as shown by these example files. Refer to `run_pipeline.ipynb` for importing, loading, and inspecting this data.
+
+Downloaded data should follow this Hive-partitioned directory structure:
+
+```
+example_data/
+└── snp_metrics/
+    ├── {barcode}/
+    │   ├── {barcode}_{sample}/
+    │   │   ├── chromosome=1/
+    │   │   │   └── *.parquet
+    │   │   ├── chromosome=2/
+    │   │   ├── ...
+    │   │   ├── chromosome=22/
+    │   │   ├── chromosome=X/
+    │   │   ├── chromosome=Y/
+    │   │   └── chromosome=M/
+```
 
 ## Now let's begin CNV hunting!
 
