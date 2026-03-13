@@ -1,7 +1,7 @@
 # CNV-Finder
  
 ## Overview
-CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on SNP array data to expedite large-scale identification of CNVs within predefined genomic regions. Manuscript coming soon!
+CNV-Finder is a novel pipeline integrating a Long Short-Term Memory network on SNP array data to expedite large-scale identification of CNVs within predefined genomic regions. Check out our [Preprint](https://www.biorxiv.org/content/10.1101/2024.11.22.624040v2) for more information on the project!
 
 ## Input Requirements
 
