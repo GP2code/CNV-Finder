@@ -18,7 +18,7 @@ SNP metrics can be extracted from microarray metadata files such as Illumina's I
 
 ### Optimizing Performance
 
-For faster processing, we recommend using the Parquet format. See `example_data/snp_metrics` for reference files, and check out `run_pipeline.ipynb` for examples of how to load and inspect your data.
+For faster processing, we recommend using the Parquet format. Reference files are available in `example_data/snp_metrics`. To create this folder, unzip `example_data/snp_metrics_split` using `run_pipeline.ipynb`, which also includes code for loading and inspecting this data.
 
 ## Now let's begin CNV hunting!
 
