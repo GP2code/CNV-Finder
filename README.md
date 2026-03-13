@@ -107,9 +107,17 @@ CNV_finder/
 │   │   │   ├── updated_dup_10_70_combo6_lstm.onnx
 │   │   │   ├── prelim_del_5_50_combo4_lstm.onnx
 │   │   │   ├── prelim_dup_10_70_combo6_lstm.onnx
+│   ├── NBA_metadata/
+│   │   ├── CHROM=1/
+│   │   │   └── *.parquet
+│   │   ├── CHROM=2/
+│   │   ├── ...
+│   │   ├── CHROM=22/
+│   │   ├── CHROM=X/
+│   │   ├── CHROM=Y/
+│   │   └── CHROM=M/
 │   ├── exons/
 │   │   ├── PARK2_exons.csv
-│   ├── NBA_metadata/
 │   ├── custom_intervals.csv
 │   ├── glist_hg38_interval.csv
 │   └── training_set_IDs.csv
